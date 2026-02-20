@@ -117,7 +117,7 @@ async function updateNews() {
                 const yahoo = await fetchYahooData(ticker);
                 if (!yahoo) continue;
 
-                if (!["NasdaqGS","NYSE","NYSEAmerican"].includes(yahoo.exchange)) continue;
+                if (!/Nasdaq|NYSE|ASE|NYQ|NMS/i.test(yahoo.exchange)) continue;
                 if (yahoo.country === "China" || yahoo.country === "Hong Kong") continue;
                 if (!yahoo.price || yahoo.price > 20) continue;
 
