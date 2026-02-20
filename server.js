@@ -16,6 +16,7 @@ const KEYWORDS = [
 "boost","growth","purchase","signs","project","surge","acquire",
 "acquisition","contract","agreement","approval","fda","breakthrough",
 "milestone","guidance","revenue","earnings","strategic","partnership",
+"stake","strategy","aquires","ai","asset",
 "collaboration"
 ];
 
