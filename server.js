@@ -29,10 +29,16 @@ async function fetchArticle(link) {
 async function updateNews() {
     try {
         const feed = await parser.parseURL(RSS_URL);
+        const now = Date.now();
+        const twelveHours = 12 * 60 * 60 * 1000;
 
         const updatedItems = [];
 
-        for (let item of feed.items.slice(0, 15)) {
+        for (let item of feed.items.slice(0, 20)) {
+            const pubTime = new Date(item.pubDate).getTime();
+
+            if (now - pubTime > twelveHours) continue;
+
             const articleHTML = await fetchArticle(item.link);
             if (!articleHTML) continue;
 
@@ -42,11 +48,15 @@ async function updateNews() {
             updatedItems.push({
                 timestamp: new Date(item.pubDate).toLocaleString(),
                 symbol: ticker,
-                headline: item.title
+                headline: item.title,
+                timeRaw: pubTime
             });
         }
 
+        updatedItems.sort((a, b) => b.timeRaw - a.timeRaw);
+
         newsCache = updatedItems;
+
         console.log("News updated:", new Date().toLocaleTimeString());
     } catch (err) {
         console.log("RSS error:", err.message);
