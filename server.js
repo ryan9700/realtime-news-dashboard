@@ -122,9 +122,7 @@ async function updateNews() {
                 if (!yahoo.price || yahoo.price > 20) continue;
 
                 const tier = floatTier(yahoo.float);
-                if (tier === "omit") {
-                    tier = "large";
-                }
+                if (tier === "omit") continue;
 
                 collected.push({
                     timestamp: new Date(item.pubDate).toLocaleString("en-US", {
