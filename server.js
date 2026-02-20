@@ -117,9 +117,14 @@ async function updateNews() {
                 const yahoo = await fetchYahooData(ticker);
                 if (!yahoo) continue;
 
-                if (!/Nasdaq|NYSE|ASE|NYQ|NMS/i.test(yahoo.exchange)) continue;
-                if (yahoo.country === "China" || yahoo.country === "Hong Kong") continue;
-                if (!yahoo.price || yahoo.price > 20) continue;
+                const price = yahoo.regularMarketPrice || 0;
+                if (price > 20 || price === 0) continue;
+
+                const country = yahoo.country || "";
+                if (/China|Hong Kong/i.test(country)) continue;
+
+                const exchange = yahoo.exchange || "";
+                if (/OTC|PNK/i.test(exchange)) continue;
 
                 const tier = floatTier(yahoo.float);
                 if (tier === "omit") continue;
