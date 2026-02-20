@@ -4,12 +4,25 @@ const fetch = require("node-fetch");
 
 const app = express();
 const parser = new Parser();
-
 const PORT = process.env.PORT || 10000;
 
 const RSS_URL = "https://www.globenewswire.com/RssFeed/subjectcode/1-News";
 
 let newsCache = [];
+let floatCache = {};
+
+const KEYWORDS = [
+"success","phase","upbeat","results","optimistic","outlook","expansion",
+"boost","growth","purchase","signs","project","surge","acquire",
+"acquisition","contract","agreement","approval","fda","breakthrough",
+"milestone","guidance","revenue","earnings","strategic","partnership",
+"collaboration"
+];
+
+function containsKeyword(title) {
+    const lower = title.toLowerCase();
+    return KEYWORDS.some(word => lower.includes(word));
+}
 
 function extractTickerFromBody(body) {
     const match = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]+)/i);
@@ -19,11 +32,46 @@ function extractTickerFromBody(body) {
 async function fetchArticle(link) {
     try {
         const response = await fetch(link);
-        const text = await response.text();
-        return text;
-    } catch (err) {
+        return await response.text();
+    } catch {
         return null;
     }
+}
+
+async function fetchFloat(symbol) {
+    if (floatCache[symbol]) return floatCache[symbol];
+
+    try {
+        const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=defaultKeyStatistics`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const stats = data.quoteSummary.result?.[0]?.defaultKeyStatistics;
+        let floatShares = stats?.floatShares?.raw;
+        let sharesOutstanding = stats?.sharesOutstanding?.raw;
+
+        let value = floatShares || sharesOutstanding || null;
+
+        floatCache[symbol] = value;
+        return value;
+    } catch {
+        return null;
+    }
+}
+
+function formatMillions(value) {
+    if (!value) return "?";
+    return (value / 1000000).toFixed(1) + "M";
+}
+
+function floatTierClass(value) {
+    if (!value) return "";
+    const millions = value / 1000000;
+
+    if (millions < 5) return "tier-bright";
+    if (millions < 10) return "tier-soft";
+    if (millions <= 20) return "tier-normal";
+    return "omit";
 }
 
 async function updateNews() {
@@ -34,16 +82,22 @@ async function updateNews() {
 
         const updatedItems = [];
 
-        for (let item of feed.items.slice(0, 20)) {
+        for (let item of feed.items.slice(0, 15)) {
             const pubTime = new Date(item.pubDate).getTime();
-
             if (now - pubTime > twelveHours) continue;
+
+            if (!containsKeyword(item.title)) continue;
 
             const articleHTML = await fetchArticle(item.link);
             if (!articleHTML) continue;
 
             const ticker = extractTickerFromBody(articleHTML);
             if (!ticker) continue;
+
+            const floatValue = await fetchFloat(ticker);
+            const tier = floatTierClass(floatValue);
+
+            if (tier === "omit") continue;
 
             updatedItems.push({
                 timestamp: new Date(item.pubDate).toLocaleString("en-US", {
@@ -57,17 +111,20 @@ async function updateNews() {
                 }),
                 symbol: ticker,
                 headline: item.title,
-                timeRaw: pubTime
+                floatDisplay: formatMillions(floatValue),
+                tier
             });
         }
 
-        updatedItems.sort((a, b) => b.timeRaw - a.timeRaw);
+        updatedItems.sort((a, b) =>
+            new Date(b.timestamp) - new Date(a.timestamp)
+        );
 
         newsCache = updatedItems;
 
-        console.log("News updated:", new Date().toLocaleTimeString());
+        console.log("Updated:", new Date().toLocaleTimeString());
     } catch (err) {
-        console.log("RSS error:", err.message);
+        console.log("Error:", err.message);
     }
 }
 
@@ -76,9 +133,10 @@ updateNews();
 
 app.get("/", (req, res) => {
     const rows = newsCache.map(item => `
-        <tr>
+        <tr class="${item.tier}">
             <td>${item.timestamp}</td>
             <td><strong>${item.symbol}</strong></td>
+            <td>${item.floatDisplay}</td>
             <td>${item.headline}</td>
         </tr>
     `).join("");
@@ -93,14 +151,18 @@ app.get("/", (req, res) => {
                 th, td { padding: 8px; border-bottom: 1px solid #333; }
                 th { background: #222; }
                 tr:hover { background: #1a1a1a; }
+                .tier-bright { background: rgba(255,0,0,0.4); }
+                .tier-soft { background: rgba(255,165,0,0.3); }
+                .tier-normal { background: rgba(255,255,255,0.05); }
             </style>
         </head>
         <body>
-            <h2>GlobeNewswire Realtime Feed</h2>
+            <h2>GlobeNewswire Momentum Feed</h2>
             <table>
                 <tr>
-                    <th>Timestamp</th>
+                    <th>Timestamp (PT)</th>
                     <th>Symbol</th>
+                    <th>Float</th>
                     <th>Headline</th>
                 </tr>
                 ${rows}
