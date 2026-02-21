@@ -54,7 +54,7 @@ async function fetchArticle(link) {
 // ===============================
 async function fetchFloat(symbol) {
 
-    if (floatCache[symbol]) return floatCache[symbol];
+    if (floatCache[symbol] !== undefined) return floatCache[symbol];
 
     try {
 
@@ -144,7 +144,7 @@ updatedItems.push({
             
         // Sort newest first
         updatedItems.sort((a, b) =>
-            new Date(b.timestamp) - new Date(a.timestamp)
+            new Date(b.headlineDate) - new Date(a.headlineDate)
         );
 
         newsCache = updatedItems;
