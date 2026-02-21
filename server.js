@@ -52,10 +52,7 @@ async function updateNews() {
             const pubTime = new Date(item.pubDate).getTime();
             if (now - pubTime > twelveHours) continue;
 
-            const articleHTML = await fetchArticle(item.link);
-            if (!articleHTML) continue;
-
-           const ticker = extractTicker(item.title, articleHTML);
+            const ticker = extractTicker(item.title);
             if (!ticker || ticker === "N/A") continue;
 
             updatedItems.push({
