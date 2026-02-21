@@ -21,16 +21,12 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 let newsCache = [];
 
 // ===============================
-// TICKER EXTRACTION (Hybrid - Keep Yours)
+// TICKER EXTRACTION (Headline Only - Clean)
 // ===============================
-function extractTicker(title, body) {
-    const titleMatch = title.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
-    if (titleMatch) return titleMatch[2];
-
-    const bodyMatch = body.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
-    return bodyMatch ? bodyMatch[2] : null;  // ✅ changed from "N/A" to null
+function extractTicker(title) {
+    const match = title.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
+    return match ? match[2] : null;
 }
-
 async function fetchArticle(link) {
     try {
         const response = await fetch(link);
