@@ -131,7 +131,7 @@ async function updateNews() {
 
         const updatedItems = [];
 
-        for (let item of feed.items.slice(0, 15)) {
+        for (let item of feed.items.slice(0, 40)) {
 
             const pubTime = new Date(item.pubDate).getTime();
             if (now - pubTime > twelveHours) continue;
