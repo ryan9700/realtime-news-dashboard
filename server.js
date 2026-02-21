@@ -125,23 +125,22 @@ async function updateNews() {
             const floatValue = await fetchFloat(ticker);
 
 
-            updatedItems.push({
-                timestamp: new Date(item.pubDate).toLocaleString("en-US", {
-                    timeZone: "America/Los_Angeles",
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false
-                }),
-                symbol: ticker,
-                headline: item.title,
-                floatDisplay: formatMillions(floatValue)
-                tier: floatTierClass(floatValue)
-            });
-        }
-
+updatedItems.push({
+    timestamp: new Date(item.pubDate).toLocaleString("en-US", {
+        timeZone: "America/Los_Angeles",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+    }),
+    symbol: ticker,
+    headline: item.title,
+    floatDisplay: formatMillions(floatValue),
+    tier: floatTierClass(floatValue)
+});
+            
         // Sort newest first
         updatedItems.sort((a, b) =>
             new Date(b.timestamp) - new Date(a.timestamp)
