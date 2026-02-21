@@ -1,5 +1,5 @@
 // ============================================
-// REALTIME NEWS DASHBOARD
+// REALTIME NEWS DASHBOARD (STABLE BASELINE)
 // ============================================
 
 import express from "express";
@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 
 // ============================================
-// KEYWORDS
+// KEYWORD FILTER LIST
 // ============================================
 
 const KEYWORDS = [
@@ -30,73 +30,56 @@ app.get("/", async (req, res) => {
 
   try {
 
-    // FETCH GLOBE RSS
+    // ============================================
+    // FETCH GLOBE NEWSWIRE RSS (MASTER FEED)
+    // ============================================
+
     const feed = await parser.parseURL(
-    "https://www.globenewswire.com/rss"
+      "https://www.globenewswire.com/rss"
     );
-    
+
     const now = new Date();
     const results = [];
+
+    // ============================================
+    // PROCESS EACH NEWS ITEM
+    // ============================================
 
     for (const item of feed.items) {
 
       const headline = item.title || "";
       const description = item.contentSnippet || "";
-      const combined = (headline + " " + description).toLowerCase();
+      const combinedText = (headline + " " + description).toLowerCase();
+
       const published = new Date(item.pubDate);
 
-      // LAST 12 HOURS
+      // --------------------------------------------
+      // 1️⃣ LAST 12 HOURS ONLY
+      // --------------------------------------------
+
       const hoursDiff = (now - published) / (1000 * 60 * 60);
       if (hoursDiff > 12) continue;
 
-      // KEYWORDS
-      if (!KEYWORDS.some(k => combined.includes(k))) continue;
+      // --------------------------------------------
+      // 2️⃣ KEYWORD FILTER
+      // --------------------------------------------
 
-      // TICKER EXTRACTION
-      const match = (headline + " " + description)
+      if (!KEYWORDS.some(k => combinedText.includes(k))) continue;
+
+      // --------------------------------------------
+      // 3️⃣ EXTRACT TICKER
+      // --------------------------------------------
+
+      const tickerMatch = (headline + " " + description)
         .match(/\((NASDAQ|NYSE|AMEX):\s*([A-Z]+)\)/i);
 
-      if (!match) continue;
+      if (!tickerMatch) continue;
 
-      const symbol = match[2];
+      const symbol = tickerMatch[2];
 
-      // YAHOO SAFE CALL
-      let yahoo = null;
-
-      try {
-        const quoteRes = await fetch(
-          `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`
-        );
-        const quoteData = await quoteRes.json();
-        yahoo = quoteData?.quoteResponse?.result?.[0] || null;
-      } catch (e) {
-        yahoo = null;
-      }
-
-      // PRICE FILTER
-      let priceDisplay = "?";
-
-      if (yahoo && yahoo.regularMarketPrice != null) {
-        const price = yahoo.regularMarketPrice;
-        priceDisplay = price.toFixed(2);
-        if (price > 20) continue;
-      }
-
-      // COUNTRY FILTER
-      if (yahoo && yahoo.country) {
-        if (/China|Hong Kong/i.test(yahoo.country)) continue;
-      }
-
-      // OTC FILTER
-      if (yahoo && yahoo.exchange) {
-        if (/OTC|PNK/i.test(yahoo.exchange)) continue;
-      }
-
-      // FLOAT
-      let floatDisplay = "?";
-      if (yahoo && yahoo.floatShares) {
-        floatDisplay = (yahoo.floatShares / 1_000_000).toFixed(1) + "M";
-      }
+      // --------------------------------------------
+      // 4️⃣ PUSH RESULT
+      // --------------------------------------------
 
       results.push({
         timeRaw: published,
@@ -104,16 +87,20 @@ app.get("/", async (req, res) => {
           timeZone: "America/Los_Angeles"
         }),
         symbol,
-        headline,
-        price: priceDisplay,
-        float: floatDisplay
+        headline
       });
     }
 
+    // ============================================
     // SORT NEWEST FIRST
+    // ============================================
+
     results.sort((a, b) => b.timeRaw - a.timeRaw);
 
-    // RENDER PAGE
+    // ============================================
+    // RENDER TABLE
+    // ============================================
+
     res.send(`
       <html>
       <head>
@@ -132,16 +119,12 @@ app.get("/", async (req, res) => {
           <tr>
             <th>Time (PT)</th>
             <th>Ticker</th>
-            <th>Price</th>
-            <th>Float</th>
             <th>Headline</th>
           </tr>
           ${results.map(r => `
             <tr>
               <td>${r.time}</td>
               <td><b>${r.symbol}</b></td>
-              <td>${r.price}</td>
-              <td>${r.float}</td>
               <td>${r.headline}</td>
             </tr>
           `).join("")}
@@ -155,6 +138,11 @@ app.get("/", async (req, res) => {
   }
 
 });
+
+
+// ============================================
+// START SERVER
+// ============================================
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
