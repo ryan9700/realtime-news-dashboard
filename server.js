@@ -1,3 +1,7 @@
+// ============================================
+// DEPENDENCIES
+// ============================================
+
 const express = require("express");
 const Parser = require("rss-parser");
 const fetch = require("node-fetch");
@@ -6,10 +10,20 @@ const app = express();
 const parser = new Parser();
 const PORT = process.env.PORT || 10000;
 
+
+// ============================================
+// CONFIGURATION
+// ============================================
+
 const RSS_URL = "https://www.globenewswire.com/RssFeed/subjectcode/1-News";
 
 let newsCache = [];
 let floatCache = {};
+
+
+// ============================================
+// KEYWORD LIST
+// ============================================
 
 const KEYWORDS = [
 "success","phase","upbeat","results","optimistic","outlook","expansion",
@@ -19,15 +33,30 @@ const KEYWORDS = [
 "collaboration"
 ];
 
+
+// ============================================
+// HELPER: KEYWORD CHECK
+// ============================================
+
 function containsKeyword(title) {
     const lower = title.toLowerCase();
     return KEYWORDS.some(word => lower.includes(word));
 }
 
+
+// ============================================
+// HELPER: EXTRACT TICKER FROM ARTICLE BODY
+// ============================================
+
 function extractTickerFromBody(body) {
     const match = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]+)/i);
     return match ? match[2] : null;
 }
+
+
+// ============================================
+// HELPER: FETCH FULL ARTICLE HTML
+// ============================================
 
 async function fetchArticle(link) {
     try {
@@ -37,6 +66,11 @@ async function fetchArticle(link) {
         return null;
     }
 }
+
+
+// ============================================
+// HELPER: FETCH FLOAT (YAHOO)
+// ============================================
 
 async function fetchFloat(symbol) {
     if (floatCache[symbol]) return floatCache[symbol];
@@ -59,10 +93,20 @@ async function fetchFloat(symbol) {
     }
 }
 
+
+// ============================================
+// HELPER: FORMAT FLOAT IN MILLIONS
+// ============================================
+
 function formatMillions(value) {
     if (!value) return "?";
     return (value / 1000000).toFixed(1) + "M";
 }
+
+
+// ============================================
+// HELPER: FLOAT TIER CLASSIFICATION
+// ============================================
 
 function floatTierClass(value) {
     if (!value) return "";
@@ -74,6 +118,11 @@ function floatTierClass(value) {
     return "omit";
 }
 
+
+// ============================================
+// MAIN NEWS UPDATE FUNCTION
+// ============================================
+
 async function updateNews() {
     try {
         const feed = await parser.parseURL(RSS_URL);
@@ -83,6 +132,7 @@ async function updateNews() {
         const updatedItems = [];
 
         for (let item of feed.items.slice(0, 15)) {
+
             const pubTime = new Date(item.pubDate).getTime();
             if (now - pubTime > twelveHours) continue;
 
@@ -123,15 +173,27 @@ async function updateNews() {
         newsCache = updatedItems;
 
         console.log("Updated:", new Date().toLocaleTimeString());
+
     } catch (err) {
         console.log("Error:", err.message);
     }
 }
 
+
+// ============================================
+// AUTO REFRESH LOOP
+// ============================================
+
 setInterval(updateNews, 60000);
 updateNews();
 
+
+// ============================================
+// WEB ROUTE
+// ============================================
+
 app.get("/", (req, res) => {
+
     const rows = newsCache.map(item => `
         <tr class="${item.tier}">
             <td>${item.timestamp}</td>
@@ -171,6 +233,11 @@ app.get("/", (req, res) => {
         </html>
     `);
 });
+
+
+// ============================================
+// START SERVER
+// ============================================
 
 app.listen(PORT, () => {
     console.log("Server running on port", PORT);
