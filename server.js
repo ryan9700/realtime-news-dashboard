@@ -169,7 +169,7 @@ async function updateNews() {
                 const floatValue = await fetchFloat(ticker);
                 const tier = floatTierClass(floatValue);
 
-                if (tier === "omit") continue;
+              //  if (tier === "omit") continue;
 
                 updatedItems.push({
                     timestamp: new Date(item.pubDate).toLocaleString("en-US", {
