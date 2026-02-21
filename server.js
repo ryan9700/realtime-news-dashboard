@@ -1,149 +1,177 @@
-// ============================================
-// REALTIME NEWS DASHBOARD (STABLE BASELINE)
-// ============================================
-
-import express from "express";
-import Parser from "rss-parser";
+const express = require("express");
+const Parser = require("rss-parser");
+const fetch = require("node-fetch");
 
 const app = express();
 const parser = new Parser();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
+const RSS_URL = "https://www.globenewswire.com/RssFeed/subjectcode/1-News";
 
-// ============================================
-// KEYWORD FILTER LIST
-// ============================================
+let newsCache = [];
+let floatCache = {};
 
 const KEYWORDS = [
-  "success","phase","upbeat","results","optimistic","outlook",
-  "expansion","boost","growth","purchase","signs","project",
-  "surge","acquires","acquisition","approval","fda","contract",
-  "award","breakthrough","positive","launch","partnership"
+"success","phase","upbeat","results","optimistic","outlook","expansion",
+"boost","growth","purchase","signs","project","surge","acquire",
+"acquisition","contract","agreement","approval","fda","breakthrough",
+"milestone","guidance","revenue","earnings","strategic","partnership",
+"collaboration"
 ];
 
+function containsKeyword(title) {
+    const lower = title.toLowerCase();
+    return KEYWORDS.some(word => lower.includes(word));
+}
 
-// ============================================
-// MAIN ROUTE
-// ============================================
+function extractTickerFromBody(body) {
+    const match = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]+)/i);
+    return match ? match[2] : null;
+}
 
-app.get("/", async (req, res) => {
-
-  try {
-
-    // ============================================
-    // FETCH GLOBE NEWSWIRE RSS (MASTER FEED)
-    // ============================================
-
-    const feed = await parser.parseURL(
-      "https://www.globenewswire.com/rss"
-    );
-
-    const now = new Date();
-    const results = [];
-
-    // ============================================
-    // PROCESS EACH NEWS ITEM
-    // ============================================
-
-    for (const item of feed.items) {
-
-      const headline = item.title || "";
-      const description = item.contentSnippet || "";
-      const combinedText = (headline + " " + description).toLowerCase();
-
-      const published = new Date(item.pubDate);
-
-      // --------------------------------------------
-      // 1️⃣ LAST 12 HOURS ONLY
-      // --------------------------------------------
-
-      const hoursDiff = (now - published) / (1000 * 60 * 60);
-      if (hoursDiff > 12) continue;
-
-      // --------------------------------------------
-      // 2️⃣ KEYWORD FILTER
-      // --------------------------------------------
-
-      if (!KEYWORDS.some(k => combinedText.includes(k))) continue;
-
-      // --------------------------------------------
-      // 3️⃣ EXTRACT TICKER
-      // --------------------------------------------
-
-      const tickerMatch = (headline + " " + description)
-        .match(/\((NASDAQ|NYSE|AMEX):\s*([A-Z]+)\)/i);
-
-      if (!tickerMatch) continue;
-
-      const symbol = tickerMatch[2];
-
-      // --------------------------------------------
-      // 4️⃣ PUSH RESULT
-      // --------------------------------------------
-
-      results.push({
-        timeRaw: published,
-        time: published.toLocaleString("en-US", {
-          timeZone: "America/Los_Angeles"
-        }),
-        symbol,
-        headline
-      });
+async function fetchArticle(link) {
+    try {
+        const response = await fetch(link);
+        return await response.text();
+    } catch {
+        return null;
     }
+}
 
-    // ============================================
-    // SORT NEWEST FIRST
-    // ============================================
+async function fetchFloat(symbol) {
+    if (floatCache[symbol]) return floatCache[symbol];
 
-    results.sort((a, b) => b.timeRaw - a.timeRaw);
+    try {
+        const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=defaultKeyStatistics`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-    // ============================================
-    // RENDER TABLE
-    // ============================================
+        const stats = data.quoteSummary.result?.[0]?.defaultKeyStatistics;
+        let floatShares = stats?.floatShares?.raw;
+        let sharesOutstanding = stats?.sharesOutstanding?.raw;
+
+        let value = floatShares || sharesOutstanding || null;
+
+        floatCache[symbol] = value;
+        return value;
+    } catch {
+        return null;
+    }
+}
+
+function formatMillions(value) {
+    if (!value) return "?";
+    return (value / 1000000).toFixed(1) + "M";
+}
+
+function floatTierClass(value) {
+    if (!value) return "";
+    const millions = value / 1000000;
+
+    if (millions < 5) return "tier-bright";
+    if (millions < 10) return "tier-soft";
+    if (millions <= 20) return "tier-normal";
+    return "omit";
+}
+
+async function updateNews() {
+    try {
+        const feed = await parser.parseURL(RSS_URL);
+        const now = Date.now();
+        const twelveHours = 12 * 60 * 60 * 1000;
+
+        const updatedItems = [];
+
+        for (let item of feed.items.slice(0, 15)) {
+            const pubTime = new Date(item.pubDate).getTime();
+            if (now - pubTime > twelveHours) continue;
+
+            if (!containsKeyword(item.title)) continue;
+
+            const articleHTML = await fetchArticle(item.link);
+            if (!articleHTML) continue;
+
+            const ticker = extractTickerFromBody(articleHTML);
+            if (!ticker) continue;
+
+            const floatValue = await fetchFloat(ticker);
+            const tier = floatTierClass(floatValue);
+
+            if (tier === "omit") continue;
+
+            updatedItems.push({
+                timestamp: new Date(item.pubDate).toLocaleString("en-US", {
+                    timeZone: "America/Los_Angeles",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                }),
+                symbol: ticker,
+                headline: item.title,
+                floatDisplay: formatMillions(floatValue),
+                tier
+            });
+        }
+
+        updatedItems.sort((a, b) =>
+            new Date(b.timestamp) - new Date(a.timestamp)
+        );
+
+        newsCache = updatedItems;
+
+        console.log("Updated:", new Date().toLocaleTimeString());
+    } catch (err) {
+        console.log("Error:", err.message);
+    }
+}
+
+setInterval(updateNews, 60000);
+updateNews();
+
+app.get("/", (req, res) => {
+    const rows = newsCache.map(item => `
+        <tr class="${item.tier}">
+            <td>${item.timestamp}</td>
+            <td><strong>${item.symbol}</strong></td>
+            <td>${item.floatDisplay}</td>
+            <td>${item.headline}</td>
+        </tr>
+    `).join("");
 
     res.send(`
-      <html>
-      <head>
-        <title>Realtime News Dashboard</title>
-        <style>
-          body { font-family: Arial; background:#111; color:#eee; padding:20px; }
-          table { width:100%; border-collapse: collapse; }
-          th, td { padding:10px; border-bottom:1px solid #333; }
-          th { background:#222; }
-          tr:hover { background:#1a1a1a; }
-        </style>
-      </head>
-      <body>
-        <h2>Realtime News (Last 12 Hours)</h2>
-        <table>
-          <tr>
-            <th>Time (PT)</th>
-            <th>Ticker</th>
-            <th>Headline</th>
-          </tr>
-          ${results.map(r => `
-            <tr>
-              <td>${r.time}</td>
-              <td><b>${r.symbol}</b></td>
-              <td>${r.headline}</td>
-            </tr>
-          `).join("")}
-        </table>
-      </body>
-      </html>
+        <html>
+        <head>
+            <meta http-equiv="refresh" content="30">
+            <style>
+                body { font-family: Arial; background: #111; color: #eee; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { padding: 8px; border-bottom: 1px solid #333; }
+                th { background: #222; }
+                tr:hover { background: #1a1a1a; }
+                .tier-bright { background: rgba(255,0,0,0.4); }
+                .tier-soft { background: rgba(255,165,0,0.3); }
+                .tier-normal { background: rgba(255,255,255,0.05); }
+            </style>
+        </head>
+        <body>
+            <h2>GlobeNewswire Momentum Feed</h2>
+            <table>
+                <tr>
+                    <th>Timestamp (PT)</th>
+                    <th>Symbol</th>
+                    <th>Float</th>
+                    <th>Headline</th>
+                </tr>
+                ${rows}
+            </table>
+        </body>
+        </html>
     `);
-
-  } catch (err) {
-    res.send("<h2>Server Error</h2><pre>" + err.message + "</pre>");
-  }
-
 });
 
-
-// ============================================
-// START SERVER
-// ============================================
-
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+    console.log("Server running on port", PORT);
 });
