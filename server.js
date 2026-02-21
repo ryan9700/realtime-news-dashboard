@@ -23,10 +23,10 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 let newsCache = [];
 
 // ===============================
-// TICKER EXTRACTION
+// TICKER EXTRACTION (Improved)
 // ===============================
 function extractTickerFromBody(body) {
-    const match = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]+)/i);
+    const match = body.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
     return match ? match[2] : "N/A";
 }
 
