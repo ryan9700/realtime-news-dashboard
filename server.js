@@ -52,19 +52,25 @@ async function fetchArticle(link) {
 // ===============================
 // FLOAT FETCH (Yahoo Finance)
 // ===============================
+// ===============================
+// FLOAT FETCH (Finnhub API)
+// ===============================
 async function fetchFloat(symbol) {
 
     if (floatCache[symbol]) return floatCache[symbol];
 
     try {
-        const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=defaultKeyStatistics`;
-        const response = await fetch(url);
+
+        const apiKey = process.env.FINNHUB_API_KEY;
+
+        const response = await fetch(
+            `https://finnhub.io/api/v1/stock/metric?symbol=${symbol}&metric=all&token=${apiKey}`
+        );
+
         const data = await response.json();
 
-        const stats = data.quoteSummary?.result?.[0]?.defaultKeyStatistics;
-
-        const floatShares = stats?.floatShares?.raw;
-        const sharesOutstanding = stats?.sharesOutstanding?.raw;
+        const floatShares = data?.metric?.shareFloat;
+        const sharesOutstanding = data?.metric?.sharesOutstanding;
 
         const value = floatShares || sharesOutstanding || null;
 
@@ -72,7 +78,8 @@ async function fetchFloat(symbol) {
 
         return value;
 
-    } catch {
+    } catch (err) {
+        console.log("Finnhub error for", symbol);
         return null;
     }
 }
