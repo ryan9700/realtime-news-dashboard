@@ -5,37 +5,28 @@ const express = require("express");
 const Parser = require("rss-parser");
 const fetch = require("node-fetch");
 
-// ===============================
-// APP SETUP
-// ===============================
 const app = express();
 const parser = new Parser();
 const PORT = process.env.PORT || 10000;
 
 // ===============================
-// RSS FEED (GENERAL)
+// RSS SOURCE
 // ===============================
-const RSS_URL = "https://www.globenewswire.com/RssFeed";
+const RSS_URL = "https://www.globenewswire.com/RssFeed/subjectcode/1-News";
 
 // ===============================
-// CACHE
+// MEMORY CACHE
 // ===============================
 let newsCache = [];
 
 // ===============================
-// TICKER EXTRACTION (Title + Body)
+// TICKER EXTRACTION
 // ===============================
-function extractTicker(title, body) {
-    const titleMatch = title.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
-    if (titleMatch) return titleMatch[2];
-
-    const bodyMatch = body.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
-    return bodyMatch ? bodyMatch[2] : "N/A";
+function extractTickerFromBody(body) {
+    const match = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]+)/i);
+    return match ? match[2] : null;
 }
 
-// ===============================
-// FETCH ARTICLE HTML
-// ===============================
 async function fetchArticle(link) {
     try {
         const response = await fetch(link);
@@ -46,25 +37,27 @@ async function fetchArticle(link) {
 }
 
 // ===============================
-// UPDATE NEWS FUNCTION
+// NEWS UPDATE FUNCTION
 // ===============================
 async function updateNews() {
     try {
         const feed = await parser.parseURL(RSS_URL);
         const now = Date.now();
-        const twentyFourHours = 24 * 60 * 60 * 1000;
+        const twelveHours = 12 * 60 * 60 * 1000;
 
         const updatedItems = [];
 
         for (let item of feed.items.slice(0, 20)) {
+
             const pubTime = new Date(item.pubDate).getTime();
-            if (now - pubTime > twentyFourHours) continue;
+            if (now - pubTime > twelveHours) continue;
 
             const articleHTML = await fetchArticle(item.link);
             if (!articleHTML) continue;
 
-            const ticker = extractTicker(item.title, articleHTML);
-            
+            const ticker = extractTickerFromBody(articleHTML);
+            if (!ticker) continue;   // ✅ ONLY FILTER: must have ticker
+
             updatedItems.push({
                 timestamp: new Date(item.pubDate).toLocaleString("en-US", {
                     timeZone: "America/Los_Angeles",
@@ -80,6 +73,7 @@ async function updateNews() {
             });
         }
 
+        // Sort newest first
         updatedItems.sort((a, b) =>
             new Date(b.timestamp) - new Date(a.timestamp)
         );
@@ -92,20 +86,24 @@ async function updateNews() {
     }
 }
 
-// ===============================
-// AUTO REFRESH
-// ===============================
 setInterval(updateNews, 60000);
 updateNews();
 
 // ===============================
-// ROUTE
+// WEB DISPLAY
 // ===============================
 app.get("/", (req, res) => {
+
     const rows = newsCache.map(item => `
         <tr>
             <td>${item.timestamp}</td>
-            <td><strong>${item.symbol}</strong></td>
+            <td>
+                <a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
+                   target="_blank"
+                   style="color:#4da6ff; text-decoration:none;">
+                   <strong>${item.symbol}</strong>
+                </a>
+            </td>
             <td>${item.headline}</td>
         </tr>
     `).join("");
@@ -120,10 +118,11 @@ app.get("/", (req, res) => {
                 th, td { padding: 8px; border-bottom: 1px solid #333; }
                 th { background: #222; }
                 tr:hover { background: #1a1a1a; }
+                a:hover { text-decoration: underline; }
             </style>
         </head>
         <body>
-            <h2>GlobeNewswire Live Feed</h2>
+            <h2>GlobeNewswire Feed (Ticker Filter Only)</h2>
             <table>
                 <tr>
                     <th>Timestamp (PT)</th>
@@ -137,9 +136,6 @@ app.get("/", (req, res) => {
     `);
 });
 
-// ===============================
-// START SERVER
-// ===============================
 app.listen(PORT, () => {
     console.log("Server running on port", PORT);
 });
