@@ -19,6 +19,7 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 // MEMORY CACHE
 // ===============================
 let newsCache = [];
+let floatCache = {};
 
 // ===============================
 // TICKER EXTRACTION (Hybrid, Priority-Based)
@@ -49,6 +50,39 @@ async function fetchArticle(link) {
 }
 
 // ===============================
+// FLOAT FETCH (Yahoo Finance)
+// ===============================
+async function fetchFloat(symbol) {
+
+    if (floatCache[symbol]) return floatCache[symbol];
+
+    try {
+        const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=defaultKeyStatistics`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const stats = data.quoteSummary?.result?.[0]?.defaultKeyStatistics;
+
+        const floatShares = stats?.floatShares?.raw;
+        const sharesOutstanding = stats?.sharesOutstanding?.raw;
+
+        const value = floatShares || sharesOutstanding || null;
+
+        floatCache[symbol] = value;
+
+        return value;
+
+    } catch {
+        return null;
+    }
+}
+
+function formatMillions(value) {
+    if (!value) return "?";
+    return (value / 1000000).toFixed(1) + "M";
+}
+
+// ===============================
 // NEWS UPDATE FUNCTION
 // ===============================
 async function updateNews() {
@@ -69,6 +103,9 @@ async function updateNews() {
 
             const ticker = extractTicker(item.title, articleHTML);
             if (!ticker) continue;
+            const floatValue = await fetchFloat(ticker);
+
+
 
             updatedItems.push({
                 timestamp: new Date(item.pubDate).toLocaleString("en-US", {
@@ -81,7 +118,8 @@ async function updateNews() {
                     hour12: false
                 }),
                 symbol: ticker,
-                headline: item.title
+                headline: item.title,
+                floatDisplay: formatMillions(floatValue)
             });
         }
 
@@ -111,11 +149,12 @@ app.get("/", (req, res) => {
             <td>${item.timestamp}</td>
             <td>
                 <a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
-                   target="_blank"
-                   style="color:#4da6ff; text-decoration:none;">
-                   <strong>${item.symbol}</strong>
+                    target="_blank"
+                    style="color:#4da6ff; text-decoration:none;">
+                    <strong>${item.symbol}</strong>
                 </a>
             </td>
+            <td>${item.floatDisplay}</td>
             <td>${item.headline}</td>
         </tr>
     `).join("");
@@ -139,6 +178,7 @@ app.get("/", (req, res) => {
                 <tr>
                     <th>Timestamp (PT)</th>
                     <th>Symbol</th>
+                    <th>Float</th>
                     <th>Headline</th>
                 </tr>
                 ${rows}
