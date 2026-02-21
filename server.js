@@ -32,9 +32,9 @@ app.get("/", async (req, res) => {
 
     // FETCH GLOBE RSS
     const feed = await parser.parseURL(
-      "https://www.globenewswire.com/RssFeed/organization/united-states"
+    "https://www.globenewswire.com/rss"
     );
-
+    
     const now = new Date();
     const results = [];
 
