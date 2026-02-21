@@ -21,15 +21,16 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 let newsCache = [];
 
 // ===============================
-// TICKER EXTRACTION (Title + Body)
+// TICKER EXTRACTION (Hybrid - Keep Yours)
 // ===============================
 function extractTicker(title, body) {
     const titleMatch = title.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
     if (titleMatch) return titleMatch[2];
 
     const bodyMatch = body.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
-    return bodyMatch ? bodyMatch[2] : "N/A";
+    return bodyMatch ? bodyMatch[2] : null;  // ✅ changed from "N/A" to null
 }
+
 async function fetchArticle(link) {
     try {
         const response = await fetch(link);
@@ -59,7 +60,7 @@ async function updateNews() {
             if (!articleHTML) continue;
 
            const ticker = extractTicker(item.title, articleHTML);
-            if (!ticker) continue;   // ✅ ONLY FILTER: must have ticker
+            if (!ticker || ticker === "N/A") continue;
 
             updatedItems.push({
                 timestamp: new Date(item.pubDate).toLocaleString("en-US", {
