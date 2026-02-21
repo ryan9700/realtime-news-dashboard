@@ -86,6 +86,22 @@ function formatMillions(value) {
 }
 
 // ===============================
+// FLOAT TIER CLASSIFICATION
+// ===============================
+function floatTierClass(value) {
+
+    if (!value) return "";
+
+    const millions = value / 1000000;
+
+    if (millions < 5) return "tier-bright";
+    if (millions < 10) return "tier-soft";
+    if (millions <= 20) return "tier-normal";
+
+    return "tier-high";
+}
+
+// ===============================
 // NEWS UPDATE FUNCTION
 // ===============================
 async function updateNews() {
@@ -109,7 +125,6 @@ async function updateNews() {
             const floatValue = await fetchFloat(ticker);
 
 
-
             updatedItems.push({
                 timestamp: new Date(item.pubDate).toLocaleString("en-US", {
                     timeZone: "America/Los_Angeles",
@@ -123,6 +138,7 @@ async function updateNews() {
                 symbol: ticker,
                 headline: item.title,
                 floatDisplay: formatMillions(floatValue)
+                tier: floatTierClass(floatValue)
             });
         }
 
@@ -147,20 +163,20 @@ updateNews();
 // ===============================
 app.get("/", (req, res) => {
 
-    const rows = newsCache.map(item => `
-        <tr>
-            <td>${item.timestamp}</td>
-            <td>
-                <a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
-                    target="_blank"
-                    style="color:#4da6ff; text-decoration:none;">
-                    <strong>${item.symbol}</strong>
-                </a>
-            </td>
-            <td>${item.floatDisplay}</td>
-            <td>${item.headline}</td>
-        </tr>
-    `).join("");
+const rows = newsCache.map(item => `
+    <tr class="${item.tier}">
+        <td>${item.timestamp}</td>
+        <td>
+            <a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
+                target="_blank"
+                style="color:#4da6ff; text-decoration:none;">
+                <strong>${item.symbol}</strong>
+            </a>
+        </td>
+        <td>${item.floatDisplay}</td>
+        <td>${item.headline}</td>
+    </tr>
+`).join("");
 
     res.send(`
         <html>
@@ -173,6 +189,10 @@ app.get("/", (req, res) => {
                 th { background: #222; }
                 tr:hover { background: #1a1a1a; }
                 a:hover { text-decoration: underline; }
+                .tier-bright { background: rgba(255, 0, 0, 0.35); }
+                .tier-soft   { background: rgba(255, 165, 0, 0.30); }
+                .tier-normal { background: rgba(255, 255, 255, 0.05); }
+                .tier-high   { opacity: 0.4; }
             </style>
         </head>
         <body>
