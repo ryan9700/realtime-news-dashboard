@@ -1,73 +1,38 @@
-// ============================================
-// DEPENDENCIES
-// ============================================
-
+// ===============================
+// IMPORTS
+// ===============================
 const express = require("express");
 const Parser = require("rss-parser");
 const fetch = require("node-fetch");
 
+// ===============================
+// APP SETUP
+// ===============================
 const app = express();
 const parser = new Parser();
 const PORT = process.env.PORT || 10000;
 
+// ===============================
+// RSS FEED (GENERAL)
+// ===============================
+const RSS_URL = "https://www.globenewswire.com/RssFeed";
 
-// ============================================
-// RSS FEEDS (MULTIPLE SOURCES)
-// ============================================
-
-const RSS_FEEDS = [
-  "https://www.globenewswire.com/RssFeed",
-  "https://www.globenewswire.com/RssFeed/subjectcode/2-Earnings",
-  "https://www.globenewswire.com/RssFeed/subjectcode/7-Mergers-and-Acquisitions",
-  "https://www.globenewswire.com/RssFeed/subjectcode/3-Business"
-];
-
-
-// ============================================
-// MEMORY CACHE
-// ============================================
-
+// ===============================
+// CACHE
+// ===============================
 let newsCache = [];
-let floatCache = {};
 
-
-// ============================================
-// KEYWORD LIST
-// ============================================
-
-const KEYWORDS = [
-"success","phase","upbeat","results","optimistic","outlook","expansion",
-"boost","growth","purchase","signs","project","surge","acquire",
-"acquisition","contract","agreement","approval","fda","breakthrough",
-"milestone","guidance","revenue","earnings","strategic","partnership",
-"collaboration"
-];
-
-
-// ============================================
-// HELPER: KEYWORD CHECK
-// ============================================
-
-function containsKeyword(title) {
-    const lower = title.toLowerCase();
-    return KEYWORDS.some(word => lower.includes(word));
-}
-
-
-// ============================================
-// HELPER: EXTRACT TICKER FROM ARTICLE BODY
-// ============================================
-
+// ===============================
+// TICKER EXTRACTION
+// ===============================
 function extractTickerFromBody(body) {
     const match = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]+)/i);
-    return match ? match[2] : null;
+    return match ? match[2] : "N/A";
 }
 
-
-// ============================================
-// HELPER: FETCH FULL ARTICLE HTML
-// ============================================
-
+// ===============================
+// FETCH ARTICLE HTML
+// ===============================
 async function fetchArticle(link) {
     try {
         const response = await fetch(link);
@@ -77,119 +42,41 @@ async function fetchArticle(link) {
     }
 }
 
-
-// ============================================
-// HELPER: FETCH FLOAT (YAHOO)
-// ============================================
-
-async function fetchFloat(symbol) {
-
-    if (floatCache[symbol]) return floatCache[symbol];
-
-    try {
-        const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}?modules=defaultKeyStatistics`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        const stats = data.quoteSummary.result?.[0]?.defaultKeyStatistics;
-
-        let floatShares = stats?.floatShares?.raw;
-        let sharesOutstanding = stats?.sharesOutstanding?.raw;
-
-        let value = floatShares || sharesOutstanding || null;
-
-        floatCache[symbol] = value;
-        return value;
-
-    } catch {
-        return null;
-    }
-}
-
-
-// ============================================
-// HELPER: FORMAT FLOAT IN MILLIONS
-// ============================================
-
-function formatMillions(value) {
-    if (!value) return "?";
-    return (value / 1000000).toFixed(1) + "M";
-}
-
-
-// ============================================
-// HELPER: FLOAT TIER CLASSIFICATION
-// ============================================
-
-function floatTierClass(value) {
-
-    if (!value) return "";
-
-    const millions = value / 1000000;
-
-    if (millions < 5) return "tier-bright";
-    if (millions < 10) return "tier-soft";
-    if (millions <= 20) return "tier-normal";
-
-    return "omit";
-}
-
-
-// ============================================
-// MAIN NEWS UPDATE FUNCTION
-// ============================================
-
+// ===============================
+// UPDATE NEWS FUNCTION
+// ===============================
 async function updateNews() {
-
     try {
-
+        const feed = await parser.parseURL(RSS_URL);
         const now = Date.now();
-        const twelveHours = 12 * 60 * 60 * 1000;
+        const twentyFourHours = 24 * 60 * 60 * 1000;
 
         const updatedItems = [];
 
-        // LOOP THROUGH ALL RSS FEEDS
-        for (let feedUrl of RSS_FEEDS) {
+        for (let item of feed.items.slice(0, 20)) {
+            const pubTime = new Date(item.pubDate).getTime();
+            if (now - pubTime > twentyFourHours) continue;
 
-            const feed = await parser.parseURL(feedUrl);
+            const articleHTML = await fetchArticle(item.link);
+            if (!articleHTML) continue;
 
-            for (let item of feed.items.slice(0, 40)) {
+            const ticker = extractTickerFromBody(articleHTML);
 
-                const pubTime = new Date(item.pubDate).getTime();
-                if (now - pubTime > twelveHours) continue;
-
-                if (!containsKeyword(item.title)) continue;
-
-                const articleHTML = await fetchArticle(item.link);
-                if (!articleHTML) continue;
-
-                const ticker = extractTickerFromBody(articleHTML);
-                if (!ticker) continue;
-
-                const floatValue = await fetchFloat(ticker);
-                const tier = floatTierClass(floatValue);
-
-              //  if (tier === "omit") continue;
-
-                updatedItems.push({
-                    timestamp: new Date(item.pubDate).toLocaleString("en-US", {
-                        timeZone: "America/Los_Angeles",
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: false
-                    }),
-                    symbol: ticker,
-                    headline: item.title,
-                    floatDisplay: formatMillions(floatValue),
-                    tier
-                });
-            }
+            updatedItems.push({
+                timestamp: new Date(item.pubDate).toLocaleString("en-US", {
+                    timeZone: "America/Los_Angeles",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false
+                }),
+                symbol: ticker,
+                headline: item.title
+            });
         }
 
-        // SORT NEWEST FIRST
         updatedItems.sort((a, b) =>
             new Date(b.timestamp) - new Date(a.timestamp)
         );
@@ -197,32 +84,25 @@ async function updateNews() {
         newsCache = updatedItems;
 
         console.log("Updated:", new Date().toLocaleTimeString());
-
     } catch (err) {
         console.log("Error:", err.message);
     }
 }
 
-
-// ============================================
-// AUTO REFRESH LOOP
-// ============================================
-
+// ===============================
+// AUTO REFRESH
+// ===============================
 setInterval(updateNews, 60000);
 updateNews();
 
-
-// ============================================
-// WEB ROUTE
-// ============================================
-
+// ===============================
+// ROUTE
+// ===============================
 app.get("/", (req, res) => {
-
     const rows = newsCache.map(item => `
-        <tr class="${item.tier}">
+        <tr>
             <td>${item.timestamp}</td>
             <td><strong>${item.symbol}</strong></td>
-            <td>${item.floatDisplay}</td>
             <td>${item.headline}</td>
         </tr>
     `).join("");
@@ -237,18 +117,14 @@ app.get("/", (req, res) => {
                 th, td { padding: 8px; border-bottom: 1px solid #333; }
                 th { background: #222; }
                 tr:hover { background: #1a1a1a; }
-                .tier-bright { background: rgba(255,0,0,0.4); }
-                .tier-soft { background: rgba(255,165,0,0.3); }
-                .tier-normal { background: rgba(255,255,255,0.05); }
             </style>
         </head>
         <body>
-            <h2>GlobeNewswire Momentum Feed</h2>
+            <h2>GlobeNewswire Live Feed</h2>
             <table>
                 <tr>
                     <th>Timestamp (PT)</th>
                     <th>Symbol</th>
-                    <th>Float</th>
                     <th>Headline</th>
                 </tr>
                 ${rows}
@@ -258,11 +134,9 @@ app.get("/", (req, res) => {
     `);
 });
 
-
-// ============================================
+// ===============================
 // START SERVER
-// ============================================
-
+// ===============================
 app.listen(PORT, () => {
     console.log("Server running on port", PORT);
 });
