@@ -126,20 +126,21 @@ async function updateNews() {
 
 
 updatedItems.push({
-    timestamp: new Date(item.pubDate).toLocaleString("en-US", {
-        timeZone: "America/Los_Angeles",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-    }),
-    symbol: ticker,
-    headline: item.title,
-    floatDisplay: formatMillions(floatValue),
-    tier: floatTierClass(floatValue)
-});
+        timestamp: new Date(item.pubDate).toLocaleString("en-US", {
+            timeZone: "America/Los_Angeles",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+        }),
+        symbol: ticker,
+        headline: item.title,
+        floatDisplay: formatMillions(floatValue),
+        tier: floatTierClass(floatValue)
+    });
+}
             
         // Sort newest first
         updatedItems.sort((a, b) =>
