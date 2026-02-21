@@ -15,7 +15,16 @@ const PORT = process.env.PORT || 10000;
 // CONFIGURATION
 // ============================================
 
-const RSS_URL = "https://www.globenewswire.com/RssFeed";
+// ============================================
+// RSS FEEDS (MULTIPLE SOURCES)
+// ============================================
+
+const RSS_FEEDS = [
+  "https://www.globenewswire.com/RssFeed",
+  "https://www.globenewswire.com/RssFeed/subjectcode/2-Earnings",
+  "https://www.globenewswire.com/RssFeed/subjectcode/7-Mergers-and-Acquisitions",
+  "https://www.globenewswire.com/RssFeed/subjectcode/3-Business"
+];
 
 let newsCache = [];
 let floatCache = {};
@@ -125,13 +134,17 @@ function floatTierClass(value) {
 
 async function updateNews() {
     try {
-        const feed = await parser.parseURL(RSS_URL);
+
         const now = Date.now();
         const twelveHours = 12 * 60 * 60 * 1000;
 
         const updatedItems = [];
 
-        for (let item of feed.items.slice(0, 40)) {
+        for (let feedUrl of RSS_FEEDS) {
+
+            const feed = await parser.parseURL(feedUrl);
+
+            for (let item of feed.items.slice(0, 40)) {
 
             const pubTime = new Date(item.pubDate).getTime();
             if (now - pubTime > twelveHours) continue;
