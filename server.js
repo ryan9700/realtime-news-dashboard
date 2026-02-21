@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 10000;
 // ===============================
 // RSS SOURCE
 // ===============================
-const RSS_URL = "https://www.globenewswire.com/RssFeed/subjectcode/1-News";
+
+const RSS_URL = "https://www.globenewswire.com/RssFeed";
 
 // ===============================
 // MEMORY CACHE
@@ -20,13 +21,15 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed/subjectcode/1-News";
 let newsCache = [];
 
 // ===============================
-// TICKER EXTRACTION
+// TICKER EXTRACTION (Title + Body)
 // ===============================
-function extractTickerFromBody(body) {
-    const match = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]+)/i);
-    return match ? match[2] : null;
-}
+function extractTicker(title, body) {
+    const titleMatch = title.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
+    if (titleMatch) return titleMatch[2];
 
+    const bodyMatch = body.match(/\(([A-Za-z\s]+):\s?([A-Z]{1,5})/);
+    return bodyMatch ? bodyMatch[2] : "N/A";
+}
 async function fetchArticle(link) {
     try {
         const response = await fetch(link);
@@ -55,7 +58,7 @@ async function updateNews() {
             const articleHTML = await fetchArticle(item.link);
             if (!articleHTML) continue;
 
-            const ticker = extractTickerFromBody(articleHTML);
+           const ticker = extractTicker(item.title, articleHTML);
             if (!ticker) continue;   // ✅ ONLY FILTER: must have ticker
 
             updatedItems.push({
