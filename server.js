@@ -21,11 +21,23 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 let newsCache = [];
 
 // ===============================
-// TICKER EXTRACTION (Headline Only - Clean)
+// TICKER EXTRACTION (Hybrid, Priority-Based)
 // ===============================
-function extractTicker(title) {
-    const match = title.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
-    return match ? match[2] : null;
+function extractTicker(title, body) {
+
+    // PRIORITY 1: (NASDAQ: TICK) or (NYSE: TICK) format
+    const exchangeMatch = title.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
+    if (exchangeMatch) return exchangeMatch[2];
+
+    // PRIORITY 2: simple (TICK) in headline
+    const simpleTitleMatch = title.match(/\(([A-Z]{1,5})\)/);
+    if (simpleTitleMatch) return simpleTitleMatch[1];
+
+    // PRIORITY 3: exchange format in body
+    const bodyExchangeMatch = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
+    if (bodyExchangeMatch) return bodyExchangeMatch[2];
+
+    return null;
 }
 async function fetchArticle(link) {
     try {
@@ -52,8 +64,11 @@ async function updateNews() {
             const pubTime = new Date(item.pubDate).getTime();
             if (now - pubTime > twelveHours) continue;
 
-            const ticker = extractTicker(item.title);
-            if (!ticker || ticker === "N/A") continue;
+            const articleHTML = await fetchArticle(item.link);
+            if (!articleHTML) continue;
+
+            const ticker = extractTicker(item.title, articleHTML);
+            if (!ticker) continue;
 
             updatedItems.push({
                 timestamp: new Date(item.pubDate).toLocaleString("en-US", {
