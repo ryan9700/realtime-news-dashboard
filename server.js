@@ -12,10 +12,6 @@ const PORT = process.env.PORT || 10000;
 
 
 // ============================================
-// CONFIGURATION
-// ============================================
-
-// ============================================
 // RSS FEEDS (MULTIPLE SOURCES)
 // ============================================
 
@@ -25,6 +21,11 @@ const RSS_FEEDS = [
   "https://www.globenewswire.com/RssFeed/subjectcode/7-Mergers-and-Acquisitions",
   "https://www.globenewswire.com/RssFeed/subjectcode/3-Business"
 ];
+
+
+// ============================================
+// MEMORY CACHE
+// ============================================
 
 let newsCache = [];
 let floatCache = {};
@@ -82,6 +83,7 @@ async function fetchArticle(link) {
 // ============================================
 
 async function fetchFloat(symbol) {
+
     if (floatCache[symbol]) return floatCache[symbol];
 
     try {
@@ -90,6 +92,7 @@ async function fetchFloat(symbol) {
         const data = await response.json();
 
         const stats = data.quoteSummary.result?.[0]?.defaultKeyStatistics;
+
         let floatShares = stats?.floatShares?.raw;
         let sharesOutstanding = stats?.sharesOutstanding?.raw;
 
@@ -97,6 +100,7 @@ async function fetchFloat(symbol) {
 
         floatCache[symbol] = value;
         return value;
+
     } catch {
         return null;
     }
@@ -118,12 +122,15 @@ function formatMillions(value) {
 // ============================================
 
 function floatTierClass(value) {
+
     if (!value) return "";
+
     const millions = value / 1000000;
 
     if (millions < 5) return "tier-bright";
     if (millions < 10) return "tier-soft";
     if (millions <= 20) return "tier-normal";
+
     return "omit";
 }
 
@@ -133,6 +140,7 @@ function floatTierClass(value) {
 // ============================================
 
 async function updateNews() {
+
     try {
 
         const now = Date.now();
@@ -140,45 +148,48 @@ async function updateNews() {
 
         const updatedItems = [];
 
+        // LOOP THROUGH ALL RSS FEEDS
         for (let feedUrl of RSS_FEEDS) {
 
             const feed = await parser.parseURL(feedUrl);
 
             for (let item of feed.items.slice(0, 40)) {
 
-            const pubTime = new Date(item.pubDate).getTime();
-            if (now - pubTime > twelveHours) continue;
+                const pubTime = new Date(item.pubDate).getTime();
+                if (now - pubTime > twelveHours) continue;
 
-            if (!containsKeyword(item.title)) continue;
+                if (!containsKeyword(item.title)) continue;
 
-            const articleHTML = await fetchArticle(item.link);
-            if (!articleHTML) continue;
+                const articleHTML = await fetchArticle(item.link);
+                if (!articleHTML) continue;
 
-            const ticker = extractTickerFromBody(articleHTML);
-            if (!ticker) continue;
+                const ticker = extractTickerFromBody(articleHTML);
+                if (!ticker) continue;
 
-            const floatValue = await fetchFloat(ticker);
-            const tier = floatTierClass(floatValue);
+                const floatValue = await fetchFloat(ticker);
+                const tier = floatTierClass(floatValue);
 
-            if (tier === "omit") continue;
+                if (tier === "omit") continue;
 
-            updatedItems.push({
-                timestamp: new Date(item.pubDate).toLocaleString("en-US", {
-                    timeZone: "America/Los_Angeles",
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false
-                }),
-                symbol: ticker,
-                headline: item.title,
-                floatDisplay: formatMillions(floatValue),
-                tier
-            });
+                updatedItems.push({
+                    timestamp: new Date(item.pubDate).toLocaleString("en-US", {
+                        timeZone: "America/Los_Angeles",
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    }),
+                    symbol: ticker,
+                    headline: item.title,
+                    floatDisplay: formatMillions(floatValue),
+                    tier
+                });
+            }
         }
 
+        // SORT NEWEST FIRST
         updatedItems.sort((a, b) =>
             new Date(b.timestamp) - new Date(a.timestamp)
         );
