@@ -3,7 +3,6 @@
 // ============================================
 
 import express from "express";
-import fetch from "node-fetch";
 import Parser from "rss-parser";
 
 const app = express();
@@ -12,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 
 // ============================================
-// KEYWORD FILTER LIST
+// KEYWORDS
 // ============================================
 
 const KEYWORDS = [
@@ -31,10 +30,7 @@ app.get("/", async (req, res) => {
 
   try {
 
-    // ============================================
-    // FETCH GLOBE NEWSWIRE RSS (US)
-    // ============================================
-
+    // FETCH GLOBE RSS
     const feed = await parser.parseURL(
       "https://www.globenewswire.com/RssFeed/organization/united-states"
     );
@@ -42,46 +38,29 @@ app.get("/", async (req, res) => {
     const now = new Date();
     const results = [];
 
-    // ============================================
-    // PROCESS EACH NEWS ITEM
-    // ============================================
-
     for (const item of feed.items) {
 
       const headline = item.title || "";
       const description = item.contentSnippet || "";
-      const combinedText = (headline + " " + description).toLowerCase();
-
+      const combined = (headline + " " + description).toLowerCase();
       const published = new Date(item.pubDate);
 
-      // --------------------------------------------
-      // 1️⃣ LAST 12 HOURS ONLY
-      // --------------------------------------------
-
+      // LAST 12 HOURS
       const hoursDiff = (now - published) / (1000 * 60 * 60);
       if (hoursDiff > 12) continue;
 
-      // --------------------------------------------
-      // 2️⃣ KEYWORD FILTER
-      // --------------------------------------------
+      // KEYWORDS
+      if (!KEYWORDS.some(k => combined.includes(k))) continue;
 
-      if (!KEYWORDS.some(k => combinedText.includes(k))) continue;
-
-      // --------------------------------------------
-      // 3️⃣ EXTRACT TICKER
-      // --------------------------------------------
-
-      const tickerMatch = (headline + " " + description)
+      // TICKER EXTRACTION
+      const match = (headline + " " + description)
         .match(/\((NASDAQ|NYSE|AMEX):\s*([A-Z]+)\)/i);
 
-      if (!tickerMatch) continue;
+      if (!match) continue;
 
-      const symbol = tickerMatch[2];
+      const symbol = match[2];
 
-      // --------------------------------------------
-      // 4️⃣ YAHOO QUOTE (SAFE CALL)
-      // --------------------------------------------
-
+      // YAHOO SAFE CALL
       let yahoo = null;
 
       try {
@@ -90,55 +69,37 @@ app.get("/", async (req, res) => {
         );
         const quoteData = await quoteRes.json();
         yahoo = quoteData?.quoteResponse?.result?.[0] || null;
-      } catch (err) {
+      } catch (e) {
         yahoo = null;
       }
 
-      // --------------------------------------------
-      // 5️⃣ PRICE FILTER (ONLY IF KNOWN)
-      // --------------------------------------------
-
+      // PRICE FILTER
       let priceDisplay = "?";
 
       if (yahoo && yahoo.regularMarketPrice != null) {
         const price = yahoo.regularMarketPrice;
         priceDisplay = price.toFixed(2);
-
         if (price > 20) continue;
       }
 
-      // --------------------------------------------
-      // 6️⃣ COUNTRY FILTER (BLOCK CHINA/HK ONLY IF KNOWN)
-      // --------------------------------------------
-
+      // COUNTRY FILTER
       if (yahoo && yahoo.country) {
         if (/China|Hong Kong/i.test(yahoo.country)) continue;
       }
 
-      // --------------------------------------------
-      // 7️⃣ OTC FILTER (BLOCK ONLY IF CONFIRMED)
-      // --------------------------------------------
-
+      // OTC FILTER
       if (yahoo && yahoo.exchange) {
         if (/OTC|PNK/i.test(yahoo.exchange)) continue;
       }
 
-      // --------------------------------------------
-      // 8️⃣ FLOAT DISPLAY (OPTIONAL)
-      // --------------------------------------------
-
+      // FLOAT
       let floatDisplay = "?";
-
       if (yahoo && yahoo.floatShares) {
-        const floatM = yahoo.floatShares / 1_000_000;
-        floatDisplay = floatM.toFixed(1) + "M";
+        floatDisplay = (yahoo.floatShares / 1_000_000).toFixed(1) + "M";
       }
 
-      // --------------------------------------------
-      // 9️⃣ PUSH RESULT
-      // --------------------------------------------
-
       results.push({
+        timeRaw: published,
         time: published.toLocaleString("en-US", {
           timeZone: "America/Los_Angeles"
         }),
@@ -149,18 +110,10 @@ app.get("/", async (req, res) => {
       });
     }
 
-    // ============================================
     // SORT NEWEST FIRST
-    // ============================================
+    results.sort((a, b) => b.timeRaw - a.timeRaw);
 
-    results.sort((a, b) =>
-      new Date(b.time) - new Date(a.time)
-    );
-
-    // ============================================
-    // RENDER TABLE
-    // ============================================
-
+    // RENDER PAGE
     res.send(`
       <html>
       <head>
@@ -198,15 +151,10 @@ app.get("/", async (req, res) => {
     `);
 
   } catch (err) {
-    res.send("Error fetching news");
+    res.send("<h2>Server Error</h2><pre>" + err.message + "</pre>");
   }
 
 });
-
-
-// ============================================
-// START SERVER
-// ============================================
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
