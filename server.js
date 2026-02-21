@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 10000;
 // CONFIGURATION
 // ============================================
 
-const RSS_URL = "https://www.globenewswire.com/RssFeed/subjectcode/1-News";
+const RSS_URL = "https://www.globenewswire.com/RssFeed";
 
 let newsCache = [];
 let floatCache = {};
