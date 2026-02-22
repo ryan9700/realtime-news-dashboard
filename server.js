@@ -172,7 +172,7 @@ updatedItems.push({
         symbol: ticker,
         headline: item.title,
         floatDisplay: formatMillions(floatValue),
-        tier: floatTierClass(floatValue)
+        tier: floatTierClass(floatValue),
         price: priceData.price ? priceData.price.toFixed(2) : "?",
         change: percentChange.toFixed(2)
     });
@@ -180,9 +180,9 @@ updatedItems.push({
             
         // Sort newest first
         updatedItems.sort((a, b) =>
-            new Date(b.headlineDate) - new Date(a.headlineDate)
+            new Date(b.timestamp) - new Date(a.timestamp)
         );
-
+    
         newsCache = updatedItems;
 
         console.log("Updated:", new Date().toLocaleTimeString());
@@ -243,9 +243,9 @@ const rows = newsCache.map(item => `
                 <tr>
                     <th>Timestamp (PT)</th>
                     <th>Symbol</th>
-                    <th>Float</th>
                     <th>Price</th>
                     <th>% Change</th>
+                    <th>Float</th>
                     <th>Headline</th>
                 </tr>
                 ${rows}
