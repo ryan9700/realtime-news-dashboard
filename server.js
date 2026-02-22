@@ -173,7 +173,7 @@ async function updateNews() {
 
         const updatedItems = [];
 
-        for (let item of feed.items.slice(0, 20)) {
+        for (let item of feed.items.slice(0, 50)) {
         
             // 🔎 KEYWORD FILTER (before any API calls)
             if (!containsKeyword(item.title)) continue;
@@ -215,6 +215,7 @@ updatedItems.push({
         }),
         symbol: ticker,
         headline: item.title,
+        link: item.link,
         floatDisplay: formatMillions(floatValue),
         tier: floatTierClass(floatValue),
         price: priceData.price ? priceData.price.toFixed(2) : "?",
@@ -258,7 +259,13 @@ const rows = newsCache.map(item => `
             ${item.change}%
         </td>
         <td>${item.floatDisplay}</td>
-        <td>${item.headline}</td>
+        <td>
+            <a href="${item.link}" 
+               target="_blank"
+               style="color:#ffffff; text-decoration:none;">
+               ${item.headline}
+            </a>
+        </td>
     </tr>
 `).join("");
 
