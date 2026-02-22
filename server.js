@@ -57,6 +57,19 @@ function containsKeyword(title) {
 }
 
 // ===============================
+// NEGATIVE KEYWORD FILTER
+// ===============================
+const NEGATIVE_KEYWORDS = [
+    "investigation", "class action", "lawsuit", "shareholder alert", "law firm",
+    "securities litigation", "breach", "complaint filed"
+];
+
+function containsNegativeKeyword(title) {
+    const lower = title.toLowerCase();
+    return NEGATIVE_KEYWORDS.some(word => lower.includes(word));
+}
+
+// ===============================
 // MEMORY CACHE
 // ===============================
 let newsCache = [];
@@ -147,8 +160,7 @@ async function fetchPrice(symbol) {
         const data = await response.json();
 
         return {
-            price: data?.c || null,
-            prevClose: data?.pc || null
+            price: data?.c || null
         };
 
     } catch (err) {
@@ -202,6 +214,8 @@ async function updateNews() {
         
             // 🔎 KEYWORD FILTER (before any API calls)
             if (!containsKeyword(item.title)) continue;
+            // 🔴 Skip legal / negative noise
+            if (containsNegativeKeyword(item.title)) continue;
             
             const pubTime = new Date(item.pubDate).getTime();
             if (now - pubTime > twelveHours) continue;
@@ -229,11 +243,6 @@ async function updateNews() {
             // 🔴 PRICE FILTER — omit over $20
             if (priceData.price > 20) continue;
 
-            const percentChange = priceData.prevClose
-                ? ((priceData.price - priceData.prevClose) / priceData.prevClose) * 100
-                : 0;
-            
-
 updatedItems.push({
         timestamp: new Date(item.pubDate).toLocaleString("en-US", {
             timeZone: "America/Los_Angeles",
@@ -250,7 +259,6 @@ updatedItems.push({
         floatDisplay: formatMillions(floatValue),
         tier: floatTierClass(floatValue),
         price: priceData.price ? priceData.price.toFixed(2) : "?",
-        change: percentChange.toFixed(2)
     });
 }
             
@@ -286,8 +294,6 @@ const rows = newsCache.map(item => `
             </a>
         </td>
         <td>$${item.price}</td>
-        <td class="${item.change >= 0 ? 'green' : 'red'}">
-            ${item.change}%
         </td>
         <td>${item.floatDisplay}</td>
         <td>
@@ -315,8 +321,6 @@ const rows = newsCache.map(item => `
                 .tier-soft   { background: rgba(255, 165, 0, 0.30); }
                 .tier-normal { background: rgba(255, 255, 255, 0.05); }
                 .tier-high   { opacity: 0.4; }
-                .green { color: #00ff88; }
-                .red { color: #ff4d4d; }
             </style>
         </head>
         <body>
@@ -326,7 +330,6 @@ const rows = newsCache.map(item => `
                     <th>Timestamp (PT)</th>
                     <th>Symbol</th>
                     <th>Price</th>
-                    <th>% Change</th>
                     <th>Float</th>
                     <th>Headline</th>
                 </tr>
