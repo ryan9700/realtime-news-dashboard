@@ -16,6 +16,27 @@ const PORT = process.env.PORT || 10000;
 const RSS_URL = "https://www.globenewswire.com/RssFeed";
 
 // ===============================
+// KEYWORD FILTER (Momentum Bias)
+// ===============================
+const KEYWORDS = [
+    "phase", "trial", "fda", "approval", "breakthrough", "drug", "positive",
+    "acquire", "acquisition", "merger", "strategic", "strategy", "secure",
+    "partnership", "collaboration", "contract", "award",
+    "agreement", "grant", "expansion", "launch",
+    "results", "earnings", "revenue", "guidance",
+    "growth", "surge", "boost", "optimistic",
+    "milestone", "successful", "positive",
+    "upbeat", "transform", "ai", "technology",
+    "deployment", "commercial", "production",
+    "losses", "rights", "investors"
+];
+
+function containsKeyword(title) {
+    const lower = title.toLowerCase();
+    return KEYWORDS.some(word => lower.includes(word));
+}
+
+// ===============================
 // MEMORY CACHE
 // ===============================
 let newsCache = [];
@@ -139,7 +160,10 @@ async function updateNews() {
         const updatedItems = [];
 
         for (let item of feed.items.slice(0, 20)) {
-
+        
+            // 🔎 KEYWORD FILTER (before any API calls)
+            if (!containsKeyword(item.title)) continue;
+            
             const pubTime = new Date(item.pubDate).getTime();
             if (now - pubTime > twelveHours) continue;
 
