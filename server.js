@@ -152,7 +152,10 @@ async function updateNews() {
             const floatValue = await fetchFloat(ticker);
             const priceData = await fetchPrice(ticker);
 
-            if (!floatValue || !priceData) continue;
+            if (!floatValue || !priceData || !priceData.price) continue;
+
+            // 🔴 PRICE FILTER — omit over $20
+            if (priceData.price > 20) continue;
 
             const percentChange = priceData.prevClose
                 ? ((priceData.price - priceData.prevClose) / priceData.prevClose) * 100
