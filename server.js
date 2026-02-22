@@ -18,17 +18,37 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 // ===============================
 // KEYWORD FILTER (Momentum Bias)
 // ===============================
+// ===============================
+// KEYWORD FILTER (Momentum Focused)
+// ===============================
 const KEYWORDS = [
-    "phase", "trial", "fda", "approval", "breakthrough", "drug", "positive",
-    "acquire", "acquisition", "merger", "strategic", "strategy", "secure",
-    "partnership", "collaboration", "contract", "award",
-    "agreement", "grant", "expansion", "launch",
-    "results", "earnings", "revenue", "guidance",
-    "growth", "surge", "boost", "optimistic",
-    "milestone", "successful", "positive",
-    "upbeat", "transform", "ai", "technology",
-    "deployment", "commercial", "production",
-    "losses", "rights", "investors"
+
+    // 🚀 Positive Performance
+    "surge","soar","jump","rally","record","strong","beat","exceed",
+    "upgraded","optimistic","upward","raises","increase","accelerate",
+    "growth","expansion","boost","improve","positive","momentum",
+
+    // 💰 Earnings / Revenue
+    "revenue","earnings","guidance","forecast","profit","backlog",
+    "contract","award","agreement","deal","purchase","order",
+
+    // 🧬 Biotech / Pharma
+    "fda","approval","fast track","breakthrough","phase 1",
+    "phase 2","phase 3","clinical","trial","data","results",
+    "enrollment","submission","ind","nda","orphan drug",
+    "clearance","efficacy","primary endpoint","meets endpoint",
+
+    // 🤖 AI / Robotics / Tech
+    "artificial intelligence","ai","machine learning","ml",
+    "robotics","automation","platform","cloud","saas",
+    "partnership","collaboration","integration","launch",
+    "deployment","rollout","upgrade","innovation",
+
+    // 🏭 Strategic / Corporate
+    "acquire","acquisition","merger","strategic","investment",
+    "expands","enters","launches", "grant", "secures", "secured", "wins",
+    "milestone", "commercial","commercialization","production", "success",
+    "successful", "upbeat", "transform", "technology"
 ];
 
 function containsKeyword(title) {
@@ -69,6 +89,11 @@ async function fetchArticle(link) {
         return null;
     }
 }
+
+// ===============================
+// FLOAT LIMIT SETTINGS
+// ===============================
+const MAX_FLOAT_MILLIONS = 20;  // 🔧 Change this number anytime
 
 // ===============================
 // FLOAT FETCH (Finnhub profile2)
@@ -191,6 +216,12 @@ async function updateNews() {
             if (!isMajorUSTicker(ticker)) continue;
             
             const floatValue = await fetchFloat(ticker);
+            // 🔴 FLOAT FILTER
+            if (!floatValue) continue;
+
+            const floatMillions = floatValue / 1000000;
+            if (floatMillions > MAX_FLOAT_MILLIONS) continue;
+            
             const priceData = await fetchPrice(ticker);
 
             if (!floatValue || !priceData || !priceData.price) continue;
