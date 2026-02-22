@@ -149,6 +149,20 @@ function floatTierClass(value) {
 }
 
 // ===============================
+// EXCHANGE FILTER
+// ===============================
+function isMajorUSTicker(ticker) {
+
+    // Block if contains dot (foreign suffix like .TO, .HK)
+    if (ticker.includes(".")) return false;
+
+    // Block if longer than 5 chars (most OTC weird tickers)
+    if (ticker.length > 5) return false;
+
+    return true;
+}
+
+// ===============================
 // NEWS UPDATE FUNCTION
 // ===============================
 async function updateNews() {
@@ -172,6 +186,9 @@ async function updateNews() {
 
             const ticker = extractTicker(item.title, articleHTML);
             if (!ticker) continue;
+
+            // 🔵 EXCHANGE FILTER
+            if (!isMajorUSTicker(ticker)) continue;
             
             const floatValue = await fetchFloat(ticker);
             const priceData = await fetchPrice(ticker);
