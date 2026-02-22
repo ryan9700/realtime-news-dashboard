@@ -86,6 +86,32 @@ function formatMillions(value) {
 }
 
 // ===============================
+// PRICE FETCH (Finnhub quote)
+// ===============================
+async function fetchPrice(symbol) {
+
+    try {
+
+        const apiKey = process.env.FINNHUB_API_KEY;
+
+        const response = await fetch(
+            `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`
+        );
+
+        const data = await response.json();
+
+        return {
+            price: data?.c || null,
+            prevClose: data?.pc || null
+        };
+
+    } catch (err) {
+        console.log("Price error for", symbol);
+        return null;
+    }
+}
+
+// ===============================
 // FLOAT TIER CLASSIFICATION
 // ===============================
 function floatTierClass(value) {
@@ -122,8 +148,16 @@ async function updateNews() {
 
             const ticker = extractTicker(item.title, articleHTML);
             if (!ticker) continue;
+            
             const floatValue = await fetchFloat(ticker);
+            const priceData = await fetchPrice(ticker);
 
+            if (!floatValue || !priceData) continue;
+
+            const percentChange = priceData.prevClose
+                ? ((priceData.price - priceData.prevClose) / priceData.prevClose) * 100
+                : 0;
+            
 
 updatedItems.push({
         timestamp: new Date(item.pubDate).toLocaleString("en-US", {
@@ -139,6 +173,8 @@ updatedItems.push({
         headline: item.title,
         floatDisplay: formatMillions(floatValue),
         tier: floatTierClass(floatValue)
+        price: priceData.price ? priceData.price.toFixed(2) : "?",
+        change: percentChange.toFixed(2)
     });
 }
             
@@ -173,6 +209,10 @@ const rows = newsCache.map(item => `
                 <strong>${item.symbol}</strong>
             </a>
         </td>
+        <td>$${item.price}</td>
+        <td class="${item.change >= 0 ? 'green' : 'red'}">
+            ${item.change}%
+        </td>
         <td>${item.floatDisplay}</td>
         <td>${item.headline}</td>
     </tr>
@@ -193,6 +233,8 @@ const rows = newsCache.map(item => `
                 .tier-soft   { background: rgba(255, 165, 0, 0.30); }
                 .tier-normal { background: rgba(255, 255, 255, 0.05); }
                 .tier-high   { opacity: 0.4; }
+                .green { color: #00ff88; }
+                .red { color: #ff4d4d; }
             </style>
         </head>
         <body>
@@ -202,6 +244,8 @@ const rows = newsCache.map(item => `
                     <th>Timestamp (PT)</th>
                     <th>Symbol</th>
                     <th>Float</th>
+                    <th>Price</th>
+                    <th>% Change</th>
                     <th>Headline</th>
                 </tr>
                 ${rows}
