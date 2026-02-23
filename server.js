@@ -366,29 +366,27 @@ async function refreshTable() {
 
         const tbody = document.getElementById("news-body");
 
-        tbody.innerHTML = data.map(item => `
-            <tr class="${item.tier}">
-                <td>${item.timestamp}</td>
+tbody.innerHTML = data.map(function(item) {
+    return '<tr class="' + item.tier + '">' +
+        '<td>' + item.timestamp + '</td>' +
 
-                <td>
-                    <a href="#" 
-                       onclick="loadTV('NASDAQ:${item.symbol}'); return false;"
-                       style="color:#4da6ff; text-decoration:none;">
-                       <strong>${item.symbol}</strong>
-                    </a>
-                </td>
+        '<td>' +
+        '<a href="#" onclick="loadTV(\'NASDAQ:' + item.symbol + '\'); return false;" style="color:#4da6ff; text-decoration:none;">' +
+        '<strong>' + item.symbol + '</strong>' +
+        '</a>' +
+        '</td>' +
 
-                <td>$${item.price}</td>
-                <td>${item.floatDisplay}</td>
+        '<td>$' + item.price + '</td>' +
+        '<td>' + item.floatDisplay + '</td>' +
 
-                <td>
-                    <a href="${item.link}" 
-                       style="color:#eee; text-decoration:none;">
-                       ${item.headline}
-                    </a>
-                </td>
-            </tr>
-        `).join("");
+        '<td>' +
+        '<a href="' + item.link + '" style="color:#eee; text-decoration:none;">' +
+        item.headline +
+        '</a>' +
+        '</td>' +
+
+    '</tr>';
+}).join("");
 
     } catch (err) {
         console.log("Refresh error", err);
