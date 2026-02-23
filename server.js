@@ -287,13 +287,13 @@ const rows = newsCache.map(item => `
     <tr class="${item.tier}">
         <td>${item.timestamp}</td>
 
-        <td>
-            <a href="#" 
-               onclick="openTV('${item.symbol}'); return false;"
-               style="color:#4da6ff; text-decoration:none;">
-               <strong>${item.symbol}</strong>
-            </a>
-        </td>
+<td>
+    <a href="#" 
+       onclick="loadTV('NASDAQ:${item.symbol}'); return false;"
+       style="color:#4da6ff; text-decoration:none;">
+       <strong>${item.symbol}</strong>
+    </a>
+</td>
 
         <td>$${item.price}</td>
         <td>${item.floatDisplay}</td>
@@ -323,24 +323,32 @@ const rows = newsCache.map(item => `
                 .tier-normal { background: rgba(255, 255, 255, 0.05); }
                 .tier-high   { opacity: 0.4; }
             </style>
-            <script>
-            let tvWindow = null;
+            <script src="https://s3.tradingview.com/tv.js"></script>
+<script>
+let tvWidget = null;
 
-            function openTV(symbol) {
+function loadTV(symbol = "NASDAQ:AAPL") {
 
-                const baseURL = symbol
-                    ? "https://www.tradingview.com/chart/?symbol=NASDAQ:" + symbol
-                    : "https://www.tradingview.com/chart/";
+    if (tvWidget) {
+        tvWidget.setSymbol(symbol, "1");
+        return;
+    }
 
-                if (!tvWindow || tvWindow.closed) {
-                    tvWindow = window.open(baseURL, "TV_WINDOW");
-                } else {
-                    tvWindow.location.replace(baseURL);
-                    tvWindow.focus();
-                }
-            }
-            
-            </script>
+    tvWidget = new TradingView.widget({
+        "autosize": true,
+        "symbol": symbol,
+        "interval": "1",
+        "timezone": "America/Los_Angeles",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#111",
+        "enable_publishing": false,
+        "hide_top_toolbar": false,
+        "container_id": "tv_container"
+    });
+}
+</script>
         </head>
         <body>
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
@@ -361,6 +369,7 @@ const rows = newsCache.map(item => `
                 </tr>
                 ${rows}
             </table>
+            <div id="tv_container" style="margin-top:20px;"></div>
         </body>
         </html>
     `);
