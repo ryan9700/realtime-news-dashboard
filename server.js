@@ -348,11 +348,16 @@ function loadTV(symbol = "NASDAQ:AAPL") {
         "container_id": "tv_container"
     });
 }
+
+window.onload = function() {
+    loadTV();
+};
+
 </script>
         </head>
         <body>
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
-                <button onclick="openTV()" 
+                <button onclick="loadTV()" 
                     style="background:#222; color:#4da6ff; border:1px solid #444; padding:6px 12px; cursor:pointer;">
                     TV
                 </button>
