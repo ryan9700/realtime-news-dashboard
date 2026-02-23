@@ -281,6 +281,10 @@ updateNews();
 // ===============================
 // WEB DISPLAY
 // ===============================
+app.get("/data", (req, res) => {
+    res.json(newsCache);
+});
+
 app.get("/", (req, res) => {
 
 const rows = newsCache.map(item => `
@@ -310,7 +314,6 @@ const rows = newsCache.map(item => `
     res.send(`
         <html>
         <head>
-            <meta http-equiv="refresh" content="30">
             <style>
                 body { font-family: Arial; background: #111; color: #eee; }
                 table { width: 100%; border-collapse: collapse; }
@@ -354,6 +357,48 @@ window.onload = function() {
 };
 
 </script>
+
+<script>
+async function refreshTable() {
+    try {
+        const response = await fetch("/data");
+        const data = await response.json();
+
+        const tbody = document.getElementById("news-body");
+
+        tbody.innerHTML = data.map(item => `
+            <tr class="${item.tier}">
+                <td>${item.timestamp}</td>
+
+                <td>
+                    <a href="#" 
+                       onclick="loadTV('NASDAQ:${item.symbol}'); return false;"
+                       style="color:#4da6ff; text-decoration:none;">
+                       <strong>${item.symbol}</strong>
+                    </a>
+                </td>
+
+                <td>$${item.price}</td>
+                <td>${item.floatDisplay}</td>
+
+                <td>
+                    <a href="${item.link}" 
+                       style="color:#eee; text-decoration:none;">
+                       ${item.headline}
+                    </a>
+                </td>
+            </tr>
+        `).join("");
+
+    } catch (err) {
+        console.log("Refresh error", err);
+    }
+}
+
+// Refresh every 30 seconds
+setInterval(refreshTable, 30000);
+</script>
+
         </head>
         <body>
 <div style="display:flex; height:100vh;">
@@ -362,13 +407,18 @@ window.onload = function() {
     <div style="width:50%; overflow-y:auto; padding-right:10px;">
         <h2>GlobeNewswire Feed (Filtered)</h2>
         <table>
-              <tr>
+            <thead>
+                <tr>
                     <th>Timestamp (PT)</th>
                     <th>Symbol</th>
                     <th>Price</th>
                     <th>Float</th>
                     <th>Headline</th>
                 </tr>
+            </thead>
+            <tbody id="news-body">
+                ${rows}
+            </tbody>
         </table>
     </div>
 
