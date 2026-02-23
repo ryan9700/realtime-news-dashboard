@@ -286,17 +286,7 @@ app.get("/", (req, res) => {
 const rows = newsCache.map(item => `
     <tr class="${item.tier}">
         <td>${item.timestamp}</td>
-        <td>
-       
-            <a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
-                target="tvwindow"
-                style="color:#4da6ff; text-decoration:none;">
-                <strong>${item.symbol}</strong>
-            </a>
-        </td>
-        <td>$${item.price}</td>
-        </td>
-        <td>${item.floatDisplay}</td>
+
         <td>
             <a href="#" 
                onclick="openTV('${item.symbol}'); return false;"
@@ -304,9 +294,20 @@ const rows = newsCache.map(item => `
                <strong>${item.symbol}</strong>
             </a>
         </td>
+
+        <td>$${item.price}</td>
+        <td>${item.floatDisplay}</td>
+
+        <td>
+            <a href="${item.link}" 
+               target="_blank"
+               style="color:#eee; text-decoration:none;">
+               ${item.headline}
+            </a>
+        </td>
     </tr>
 `).join("");
-
+    
     res.send(`
         <html>
         <head>
@@ -350,7 +351,6 @@ const rows = newsCache.map(item => `
 
                 <h2 style="margin:0;">GlobeNewswire Feed (Filtered)</h2>
             </div>
-            <h2>GlobeNewswire Feed (Ticker Filter Only)</h2>
             <table>
                 <tr>
                     <th>Timestamp (PT)</th>
