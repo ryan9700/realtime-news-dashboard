@@ -288,7 +288,7 @@ const rows = newsCache.map(item => `
         <td>${item.timestamp}</td>
         <td>
             <a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
-                target="_blank"
+                target="tvwindow"
                 style="color:#4da6ff; text-decoration:none;">
                 <strong>${item.symbol}</strong>
             </a>
@@ -298,7 +298,7 @@ const rows = newsCache.map(item => `
         <td>${item.floatDisplay}</td>
         <td>
             <a href="${item.link}" 
-               target="_blank"
+               target="tvwindow"
                style="color:#ffffff; text-decoration:none;">
                ${item.headline}
             </a>
