@@ -23,50 +23,50 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 // ===============================
 const KEYWORDS = [
 
-    // 🚀 Positive Performance
-    "surge","soar","jump","rally","record","strong","beat","exceed",
-    "upgraded","optimistic","upward","raises","increase","accelerate",
-    "growth","expansion","boost","improve","positive","momentum",
+// 🚀 Positive Performance
+"surge","soar","jump","rally","record","strong","beat","exceed",
+"upgraded","optimistic","upward","raises","increase","accelerate",
+"growth","expansion","boost","improve","positive","momentum",
 
-    // 💰 Earnings / Revenue
-    "revenue","earnings","guidance","forecast","profit","backlog",
-    "contract","award","agreement","deal","purchase","order",
+// 💰 Earnings / Revenue
+"revenue","earnings","guidance","forecast","profit","backlog",
+"contract","award","agreement","deal","purchase","order",
 
-    // 🧬 Biotech / Pharma
-    "fda","approval","fast track","breakthrough","phase 1",
-    "phase 2","phase 3","clinical","trial","data","results",
-    "enrollment","submission","ind","nda","orphan drug",
-    "clearance","efficacy","primary endpoint","meets endpoint",
+// 🧬 Biotech / Pharma
+"fda","approval","fast track","breakthrough","phase 1",
+"phase 2","phase 3","clinical","trial","data","results",
+"enrollment","submission","ind","nda","orphan drug",
+"clearance","efficacy","primary endpoint","meets endpoint",
 
-    // 🤖 AI / Robotics / Tech
-    "artificial intelligence","ai","machine learning","ml",
-    "robotics","automation","platform","cloud","saas",
-    "partnership","collaboration","integration","launch",
-    "deployment","rollout","upgrade","innovation",
+// 🤖 AI / Robotics / Tech
+"artificial intelligence","ai","machine learning","ml",
+"robotics","automation","platform","cloud","saas",
+"partnership","collaboration","integration","launch",
+"deployment","rollout","upgrade","innovation",
 
-    // 🏭 Strategic / Corporate
-    "acquire","acquisition","merger","strategic","investment",
-    "expands","enters","launches", "grant", "secures", "secured", "wins",
-    "milestone", "commercial","commercialization","production", "success",
-    "successful", "upbeat", "transform", "technology"
+// 🏭 Strategic / Corporate
+"acquire","acquisition","merger","strategic","investment",
+"expands","enters","launches", "grant", "secures", "secured", "wins",
+"milestone", "commercial","commercialization","production", "success",
+"successful", "upbeat", "transform", "technology"
 ];
 
 function containsKeyword(title) {
-    const lower = title.toLowerCase();
-    return KEYWORDS.some(word => lower.includes(word));
+const lower = title.toLowerCase();
+return KEYWORDS.some(word => lower.includes(word));
 }
 
 // ===============================
 // NEGATIVE KEYWORD FILTER
 // ===============================
 const NEGATIVE_KEYWORDS = [
-    "investigation", "class action", "lawsuit", "shareholder alert", "law firm",
-    "securities litigation", "breach", "complaint filed"
+"investigation", "class action", "lawsuit", "shareholder alert", "law firm",
+"securities litigation", "breach", "complaint filed"
 ];
 
 function containsNegativeKeyword(title) {
-    const lower = title.toLowerCase();
-    return NEGATIVE_KEYWORDS.some(word => lower.includes(word));
+const lower = title.toLowerCase();
+return NEGATIVE_KEYWORDS.some(word => lower.includes(word));
 }
 
 // ===============================
@@ -80,68 +80,68 @@ let floatCache = {};
 // ===============================
 function extractTicker(title, body) {
 
-    // PRIORITY 1: (NASDAQ: TICK) or (NYSE: TICK) format
-    const exchangeMatch = title.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
-    if (exchangeMatch) return exchangeMatch[2];
+// PRIORITY 1: (NASDAQ: TICK) or (NYSE: TICK) format
+const exchangeMatch = title.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
+if (exchangeMatch) return exchangeMatch[2];
 
-    // PRIORITY 2: simple (TICK) in headline
-    const simpleTitleMatch = title.match(/\(([A-Z]{1,5})\)/);
-    if (simpleTitleMatch) return simpleTitleMatch[1];
+// PRIORITY 2: simple (TICK) in headline
+const simpleTitleMatch = title.match(/\(([A-Z]{1,5})\)/);
+if (simpleTitleMatch) return simpleTitleMatch[1];
 
-    // PRIORITY 3: exchange format in body
-    const bodyExchangeMatch = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
-    if (bodyExchangeMatch) return bodyExchangeMatch[2];
+// PRIORITY 3: exchange format in body
+const bodyExchangeMatch = body.match(/\((Nasdaq|NYSE|AMEX):\s?([A-Z]{1,5})\)/i);
+if (bodyExchangeMatch) return bodyExchangeMatch[2];
 
-    return null;
+return null;
 }
 async function fetchArticle(link) {
-    try {
-        const response = await fetch(link);
-        return await response.text();
-    } catch {
-        return null;
-    }
+try {
+const response = await fetch(link);
+return await response.text();
+} catch {
+return null;
+}
 }
 
 // ===============================
 // FLOAT LIMIT SETTINGS
 // ===============================
-const MAX_FLOAT_MILLIONS = 20;  // 🔧 Change this number anytime
+const MAX_FLOAT_MILLIONS = 20; // 🔧 Change this number anytime
 
 // ===============================
 // FLOAT FETCH (Finnhub profile2)
 // ===============================
 async function fetchFloat(symbol) {
 
-    if (floatCache[symbol] !== undefined) return floatCache[symbol];
+if (floatCache[symbol] !== undefined) return floatCache[symbol];
 
-    try {
+try {
 
-        const apiKey = process.env.FINNHUB_API_KEY;
+const apiKey = process.env.FINNHUB_API_KEY;
 
-        const response = await fetch(
-            `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${apiKey}`
-        );
+const response = await fetch(
+`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${apiKey}`
+);
 
-        const data = await response.json();
+const data = await response.json();
 
-        const sharesOutstanding = data?.shareOutstanding;
+const sharesOutstanding = data?.shareOutstanding;
 
-        const value = sharesOutstanding ? sharesOutstanding * 1000000 : null;
+const value = sharesOutstanding ? sharesOutstanding * 1000000 : null;
 
-        floatCache[symbol] = value;
+floatCache[symbol] = value;
 
-        return value;
+return value;
 
-    } catch (err) {
-        console.log("Finnhub error for", symbol, err.message);
-        return null;
-    }
+} catch (err) {
+console.log("Finnhub error for", symbol, err.message);
+return null;
+}
 }
 
 function formatMillions(value) {
-    if (!value) return "?";
-    return (value / 1000000).toFixed(1) + "M";
+if (!value) return "?";
+return (value / 1000000).toFixed(1) + "M";
 }
 
 // ===============================
@@ -149,24 +149,24 @@ function formatMillions(value) {
 // ===============================
 async function fetchPrice(symbol) {
 
-    try {
+try {
 
-        const apiKey = process.env.FINNHUB_API_KEY;
+const apiKey = process.env.FINNHUB_API_KEY;
 
-        const response = await fetch(
-            `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`
-        );
+const response = await fetch(
+`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`
+);
 
-        const data = await response.json();
+const data = await response.json();
 
-        return {
-            price: data?.c || null
-        };
+return {
+price: data?.c || null
+};
 
-    } catch (err) {
-        console.log("Price error for", symbol);
-        return null;
-    }
+} catch (err) {
+console.log("Price error for", symbol);
+return null;
+}
 }
 
 // ===============================
@@ -174,15 +174,15 @@ async function fetchPrice(symbol) {
 // ===============================
 function floatTierClass(value) {
 
-    if (!value) return "";
+if (!value) return "";
 
-    const millions = value / 1000000;
+const millions = value / 1000000;
 
-    if (millions < 5) return "tier-bright";
-    if (millions < 10) return "tier-soft";
-    if (millions <= 20) return "tier-normal";
+if (millions < 5) return "tier-bright";
+if (millions < 10) return "tier-soft";
+if (millions <= 20) return "tier-normal";
 
-    return "tier-high";
+return "tier-high";
 }
 
 // ===============================
@@ -190,89 +190,89 @@ function floatTierClass(value) {
 // ===============================
 function isMajorUSTicker(ticker) {
 
-    // Block if contains dot (foreign suffix like .TO, .HK)
-    if (ticker.includes(".")) return false;
+// Block if contains dot (foreign suffix like .TO, .HK)
+if (ticker.includes(".")) return false;
 
-    // Block if longer than 5 chars (most OTC weird tickers)
-    if (ticker.length > 5) return false;
+// Block if longer than 5 chars (most OTC weird tickers)
+if (ticker.length > 5) return false;
 
-    return true;
+return true;
 }
 
 // ===============================
 // NEWS UPDATE FUNCTION
 // ===============================
 async function updateNews() {
-    try {
-        const feed = await parser.parseURL(RSS_URL);
-        const now = Date.now();
-        const twelveHours = 12 * 60 * 60 * 1000;
+try {
+const feed = await parser.parseURL(RSS_URL);
+const now = Date.now();
+const twelveHours = 12 * 60 * 60 * 1000;
 
-        const updatedItems = [];
+const updatedItems = [];
 
-        for (let item of feed.items.slice(0, 50)) {
-        
-            // 🔎 KEYWORD FILTER (before any API calls)
-            if (!containsKeyword(item.title)) continue;
-            // 🔴 Skip legal / negative noise
-            if (containsNegativeKeyword(item.title)) continue;
-            
-            const pubTime = new Date(item.pubDate).getTime();
-            if (now - pubTime > twelveHours) continue;
+for (let item of feed.items.slice(0, 50)) {
 
-            const articleHTML = await fetchArticle(item.link);
-            if (!articleHTML) continue;
+// 🔎 KEYWORD FILTER (before any API calls)
+if (!containsKeyword(item.title)) continue;
+// 🔴 Skip legal / negative noise
+if (containsNegativeKeyword(item.title)) continue;
 
-            const ticker = extractTicker(item.title, articleHTML);
-            if (!ticker) continue;
+const pubTime = new Date(item.pubDate).getTime();
+if (now - pubTime > twelveHours) continue;
 
-            // 🔵 EXCHANGE FILTER
-            if (!isMajorUSTicker(ticker)) continue;
-            
-            const floatValue = await fetchFloat(ticker);
-            // 🔴 FLOAT FILTER
-            if (!floatValue) continue;
+const articleHTML = await fetchArticle(item.link);
+if (!articleHTML) continue;
 
-            const floatMillions = floatValue / 1000000;
-            if (floatMillions > MAX_FLOAT_MILLIONS) continue;
-            
-            const priceData = await fetchPrice(ticker);
+const ticker = extractTicker(item.title, articleHTML);
+if (!ticker) continue;
 
-            if (!floatValue || !priceData || !priceData.price) continue;
+// 🔵 EXCHANGE FILTER
+if (!isMajorUSTicker(ticker)) continue;
 
-            // 🔴 PRICE FILTER — omit over $20
-            if (priceData.price > 20) continue;
+const floatValue = await fetchFloat(ticker);
+// 🔴 FLOAT FILTER
+if (!floatValue) continue;
+
+const floatMillions = floatValue / 1000000;
+if (floatMillions > MAX_FLOAT_MILLIONS) continue;
+
+const priceData = await fetchPrice(ticker);
+
+if (!floatValue || !priceData || !priceData.price) continue;
+
+// 🔴 PRICE FILTER — omit over $20
+if (priceData.price > 20) continue;
 
 updatedItems.push({
-        timestamp: new Date(item.pubDate).toLocaleString("en-US", {
-            timeZone: "America/Los_Angeles",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false
-        }),
-        symbol: ticker,
-        headline: item.title,
-        link: item.link,
-        floatDisplay: formatMillions(floatValue),
-        tier: floatTierClass(floatValue),
-        price: priceData.price ? priceData.price.toFixed(2) : "?",
-    });
+timestamp: new Date(item.pubDate).toLocaleString("en-US", {
+timeZone: "America/Los_Angeles",
+year: "numeric",
+month: "2-digit",
+day: "2-digit",
+hour: "2-digit",
+minute: "2-digit",
+hour12: false
+}),
+symbol: ticker,
+headline: item.title,
+link: item.link,
+floatDisplay: formatMillions(floatValue),
+tier: floatTierClass(floatValue),
+price: priceData.price ? priceData.price.toFixed(2) : "?",
+});
 }
-            
-        // Sort newest first
-        updatedItems.sort((a, b) =>
-            new Date(b.timestamp) - new Date(a.timestamp)
-        );
-    
-        newsCache = updatedItems;
 
-        console.log("Updated:", new Date().toLocaleTimeString());
-    } catch (err) {
-        console.log("Error:", err.message);
-    }
+// Sort newest first
+updatedItems.sort((a, b) =>
+new Date(b.timestamp) - new Date(a.timestamp)
+);
+
+newsCache = updatedItems;
+
+console.log("Updated:", new Date().toLocaleTimeString());
+} catch (err) {
+console.log("Error:", err.message);
+}
 }
 
 setInterval(updateNews, 60000);
@@ -281,156 +281,65 @@ updateNews();
 // ===============================
 // WEB DISPLAY
 // ===============================
-app.get("/data", (req, res) => {
-    res.json(newsCache);
-});
-
 app.get("/", (req, res) => {
 
 const rows = newsCache.map(item => `
-    <tr class="${item.tier}">
-        <td>${item.timestamp}</td>
-
+<tr class="${item.tier}">
+<td>${item.timestamp}</td>
 <td>
-    <a href="#" 
-       onclick="loadTV('NASDAQ:${item.symbol}'); return false;"
-       style="color:#4da6ff; text-decoration:none;">
-       <strong>${item.symbol}</strong>
-    </a>
+<a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
+target="_blank"
+style="color:#4da6ff; text-decoration:none;">
+<strong>${item.symbol}</strong>
+</a>
 </td>
-
-        <td>$${item.price}</td>
-        <td>${item.floatDisplay}</td>
-
-        <td>
-            <a href="${item.link}" 
-               style="color:#eee; text-decoration:none;">
-               ${item.headline}
-            </a>
-        </td>
-    </tr>
+<td>$${item.price}</td>
+</td>
+<td>${item.floatDisplay}</td>
+<td>
+<a href="${item.link}" 
+target="_blank"
+style="color:#ffffff; text-decoration:none;">
+${item.headline}
+</a>
+</td>
+</tr>
 `).join("");
-    
-    res.send(`
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial; background: #111; color: #eee; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { padding: 8px; border-bottom: 1px solid #333; }
-                th { background: #222; }
-                tr:hover { background: #1a1a1a; }
-                a:hover { text-decoration: underline; }
-                .tier-bright { background: rgba(255, 0, 0, 0.35); }
-                .tier-soft   { background: rgba(255, 165, 0, 0.30); }
-                .tier-normal { background: rgba(255, 255, 255, 0.05); }
-                .tier-high   { opacity: 0.4; }
-            </style>
-            <script src="https://s3.tradingview.com/tv.js"></script>
-<script>
-let tvWidget = null;
 
-function loadTV(symbol = "NASDAQ:AAPL") {
-
-    if (tvWidget) {
-        tvWidget.setSymbol(symbol, "1");
-        return;
-    }
-
-    tvWidget = new TradingView.widget({
-        "autosize": true,
-        "symbol": symbol,
-        "interval": "1",
-        "timezone": "America/Los_Angeles",
-        "theme": "dark",
-        "style": "1",
-        "locale": "en",
-        "toolbar_bg": "#111",
-        "enable_publishing": false,
-        "hide_top_toolbar": false,
-        "container_id": "tv_container"
-    });
-}
-
-window.onload = function() {
-    loadTV();
-};
-
-</script>
-
-<script>
-async function refreshTable() {
-    try {
-        const response = await fetch("/data");
-        const data = await response.json();
-
-        const tbody = document.getElementById("news-body");
-
-tbody.innerHTML = data.map(function(item) {
-    return '<tr class="' + item.tier + '">' +
-        '<td>' + item.timestamp + '</td>' +
-
-        '<td>' +
-        '<a href="#" onclick="loadTV(\'NASDAQ:' + item.symbol + '\'); return false;" style="color:#4da6ff; text-decoration:none;">' +
-        '<strong>' + item.symbol + '</strong>' +
-        '</a>' +
-        '</td>' +
-
-        '<td>$' + item.price + '</td>' +
-        '<td>' + item.floatDisplay + '</td>' +
-
-        '<td>' +
-        '<a href="' + item.link + '" style="color:#eee; text-decoration:none;">' +
-        item.headline +
-        '</a>' +
-        '</td>' +
-
-    '</tr>';
-}).join("");
-
-    } catch (err) {
-        console.log("Refresh error", err);
-    }
-}
-
-// Refresh every 30 seconds
-setInterval(refreshTable, 30000);
-</script>
-
-        </head>
-        <body>
-<div style="display:flex; height:100vh;">
-
-    <!-- LEFT SIDE NEWS -->
-    <div style="width:50%; overflow-y:auto; padding-right:10px;">
-        <h2>GlobeNewswire Feed (Filtered)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Timestamp (PT)</th>
-                    <th>Symbol</th>
-                    <th>Price</th>
-                    <th>Float</th>
-                    <th>Headline</th>
-                </tr>
-            </thead>
-            <tbody id="news-body">
-                ${rows}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- RIGHT SIDE CHART -->
-    <div style="width:50%; position:sticky; top:0;">
-        <div id="tv_container" style="height:100vh;"></div>
-    </div>
-
-</div>
-</body>  
-        </html>
-    `);
+res.send(`
+<html>
+<head>
+<meta http-equiv="refresh" content="30">
+<style>
+body { font-family: Arial; background: #111; color: #eee; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 8px; border-bottom: 1px solid #333; }
+th { background: #222; }
+tr:hover { background: #1a1a1a; }
+a:hover { text-decoration: underline; }
+.tier-bright { background: rgba(255, 0, 0, 0.35); }
+.tier-soft { background: rgba(255, 165, 0, 0.30); }
+.tier-normal { background: rgba(255, 255, 255, 0.05); }
+.tier-high { opacity: 0.4; }
+</style>
+</head>
+<body>
+<h2>GlobeNewswire Feed (Ticker Filter Only)</h2>
+<table>
+<tr>
+<th>Timestamp (PT)</th>
+<th>Symbol</th>
+<th>Price</th>
+<th>Float</th>
+<th>Headline</th>
+</tr>
+${rows}
+</table>
+</body>
+</html>
+`);
 });
 
 app.listen(PORT, () => {
-    console.log("Server running on port", PORT);
+console.log("Server running on port", PORT);
 });
