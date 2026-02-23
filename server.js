@@ -300,7 +300,6 @@ const rows = newsCache.map(item => `
 
         <td>
             <a href="${item.link}" 
-               target="_blank"
                style="color:#eee; text-decoration:none;">
                ${item.headline}
             </a>
