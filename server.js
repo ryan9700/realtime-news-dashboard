@@ -334,12 +334,13 @@ const rows = newsCache.map(item => `
                     : "https://www.tradingview.com/chart/";
 
                 if (!tvWindow || tvWindow.closed) {
-                    tvWindow = window.open(baseURL, "tvwindow");
+                    tvWindow = window.open(baseURL, "TV_WINDOW");
                 } else {
-                    tvWindow.location.href = baseURL;
+                    tvWindow.location.replace(baseURL);
                     tvWindow.focus();
                 }
-            }    
+            }
+            
             </script>
         </head>
         <body>
