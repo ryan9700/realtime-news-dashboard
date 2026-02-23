@@ -356,26 +356,29 @@ window.onload = function() {
 </script>
         </head>
         <body>
-            <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
-                <button onclick="loadTV()" 
-                    style="background:#222; color:#4da6ff; border:1px solid #444; padding:6px 12px; cursor:pointer;">
-                    TV
-                </button>
+<div style="display:flex; height:100vh;">
 
-                <h2 style="margin:0;">GlobeNewswire Feed (Filtered)</h2>
-            </div>
-            <table>
-                <tr>
+    <!-- LEFT SIDE NEWS -->
+    <div style="width:50%; overflow-y:auto; padding-right:10px;">
+        <h2>GlobeNewswire Feed (Filtered)</h2>
+        <table>
+              <tr>
                     <th>Timestamp (PT)</th>
                     <th>Symbol</th>
                     <th>Price</th>
                     <th>Float</th>
                     <th>Headline</th>
                 </tr>
-                ${rows}
-            </table>
-            <div id="tv_container" style="margin-top:20px;"></div>
-        </body>
+        </table>
+    </div>
+
+    <!-- RIGHT SIDE CHART -->
+    <div style="width:50%; position:sticky; top:0;">
+        <div id="tv_container" style="height:100vh;"></div>
+    </div>
+
+</div>
+</body>  
         </html>
     `);
 });
