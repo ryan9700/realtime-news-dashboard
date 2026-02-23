@@ -287,6 +287,7 @@ const rows = newsCache.map(item => `
     <tr class="${item.tier}">
         <td>${item.timestamp}</td>
         <td>
+       
             <a href="https://www.tradingview.com/chart/?symbol=NASDAQ:${item.symbol}" 
                 target="tvwindow"
                 style="color:#4da6ff; text-decoration:none;">
@@ -297,10 +298,10 @@ const rows = newsCache.map(item => `
         </td>
         <td>${item.floatDisplay}</td>
         <td>
-            <a href="${item.link}" 
-               target="tvwindow"
-               style="color:#ffffff; text-decoration:none;">
-               ${item.headline}
+            <a href="#" 
+               onclick="openTV('${item.symbol}'); return false;"
+               style="color:#4da6ff; text-decoration:none;">
+               <strong>${item.symbol}</strong>
             </a>
         </td>
     </tr>
@@ -322,8 +323,33 @@ const rows = newsCache.map(item => `
                 .tier-normal { background: rgba(255, 255, 255, 0.05); }
                 .tier-high   { opacity: 0.4; }
             </style>
+            <script>
+            let tvWindow = null;
+
+            function openTV(symbol) {
+
+                const baseURL = symbol
+                    ? "https://www.tradingview.com/chart/?symbol=NASDAQ:" + symbol
+                    : "https://www.tradingview.com/chart/";
+
+                if (!tvWindow || tvWindow.closed) {
+                    tvWindow = window.open(baseURL, "tvwindow");
+                } else {
+                    tvWindow.location.href = baseURL;
+                    tvWindow.focus();
+                }
+            }    
+            </script>
         </head>
         <body>
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                <button onclick="openTV()" 
+                    style="background:#222; color:#4da6ff; border:1px solid #444; padding:6px 12px; cursor:pointer;">
+                    TV
+                </button>
+
+                <h2 style="margin:0;">GlobeNewswire Feed (Filtered)</h2>
+            </div>
             <h2>GlobeNewswire Feed (Ticker Filter Only)</h2>
             <table>
                 <tr>
