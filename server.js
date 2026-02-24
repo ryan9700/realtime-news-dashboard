@@ -309,7 +309,6 @@ ${item.headline}
 res.send(`
 <html>
 <head>
-<meta http-equiv="refresh" content="30">
 <style>
 body { font-family: Arial; background: #111; color: #eee; }
 table { width: 100%; border-collapse: collapse; }
@@ -335,6 +334,11 @@ a:hover { text-decoration: underline; }
 </tr>
 ${rows}
 </table>
+<script>
+setInterval(() => {
+  window.location.reload();
+}, 30000);
+</script>
 </body>
 </html>
 `);
