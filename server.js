@@ -281,7 +281,10 @@ updateNews();
 // ===============================
 // WEB DISPLAY
 // ===============================
+
 app.get("/", (req, res) => {
+
+  res.set("Cache-Control", "no-store");
 
 const rows = newsCache.map(item => `
 <tr class="${item.tier}">
