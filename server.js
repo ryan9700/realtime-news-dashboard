@@ -9,15 +9,13 @@ const app = express();
 const parser = new Parser();
 const PORT = process.env.PORT || 10000;
 
+app.use(express.static("public"));
 // ===============================
 // RSS SOURCE
 // ===============================
 
 const RSS_URL = "https://www.globenewswire.com/RssFeed";
 
-// ===============================
-// KEYWORD FILTER (Momentum Bias)
-// ===============================
 // ===============================
 // KEYWORD FILTER (Momentum Focused)
 // ===============================
