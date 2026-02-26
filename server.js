@@ -22,7 +22,7 @@ const RSS_URL = "https://www.globenewswire.com/RssFeed";
 const KEYWORDS = [
 
 // 🚀 Positive Performance
-"surge","soar","jump","rally","record","strong","beat","exceed",
+"surge","soar","jump","rally","record","strong","beat","exceed", "supercharge",
 "upgraded","optimistic","upward","raises","increase","accelerate",
 "growth","expansion","boost","improve","positive","momentum",
 
@@ -37,14 +37,14 @@ const KEYWORDS = [
 "clearance","efficacy","primary endpoint","meets endpoint",
 
 // 🤖 AI / Robotics / Tech
-"artificial intelligence","ai","machine learning","ml",
+"artificial intelligence","ai","machine learning","ml", "quantum",
 "robotics","automation","platform","cloud","saas",
 "partnership","collaboration","integration","launch",
 "deployment","rollout","upgrade","innovation",
 
 // 🏭 Strategic / Corporate
-"acquire","acquisition","merger","strategic","investment",
-"expands","enters","launches", "grant", "secures", "secured", "wins",
+"acquire","acquisition","merger","strategic","investment", "accepted", "pilot",
+"expands","enters", "launch", "launches", "grant", "secures", "secured", "wins",
 "milestone", "commercial","commercialization","production", "success",
 "successful", "upbeat", "transform", "technology", "partners"
 ];
