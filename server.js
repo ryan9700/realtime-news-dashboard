@@ -46,7 +46,7 @@ const KEYWORDS = [
 "acquire","acquisition","merger","strategic","investment",
 "expands","enters","launches", "grant", "secures", "secured", "wins",
 "milestone", "commercial","commercialization","production", "success",
-"successful", "upbeat", "transform", "technology"
+"successful", "upbeat", "transform", "technology", "partners"
 ];
 
 function containsKeyword(title) {
@@ -332,7 +332,7 @@ a:hover { text-decoration: underline; }
     🔔 Sound: OFF
   </button>
 
-  <h2>GlobeNewswire Feed (Ticker Filter Only)</h2>
+  <h2>Ryan's Stock News Feed</h2>
 </div>
 
 <table>
@@ -350,6 +350,10 @@ ${rows}
 <audio id="newsSound" src="/bell-ding-correct.mp3" preload="auto"></audio>
 
 <script>
+
+if ("Notification" in window && Notification.permission !== "granted") {
+  Notification.requestPermission();
+}
 
 // ===========================
 // AUTO REFRESH
@@ -401,10 +405,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const newestHeadline = rows[1].cells[4].innerText;
   const lastHeadline = localStorage.getItem("lastHeadline");
 
-  if (soundEnabled && lastHeadline && newestHeadline !== lastHeadline) {
-    audio.volume = 0.35;
-    audio.play().catch(()=>{});
+if (soundEnabled && lastHeadline && newestHeadline !== lastHeadline) {
+
+  audio.volume = 0.35;
+  audio.play().catch(()=>{});
+
+  // Desktop notification
+  if (Notification.permission === "granted") {
+    new Notification("New Momentum News", {
+      body: newestHeadline
+    });
   }
+}
+
 
   localStorage.setItem("lastHeadline", newestHeadline);
 });
