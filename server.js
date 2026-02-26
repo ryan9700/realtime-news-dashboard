@@ -323,8 +323,18 @@ a:hover { text-decoration: underline; }
 .tier-high { opacity: 0.4; }
 </style>
 </head>
+
 <body>
-<h2>GlobeNewswire Feed (Ticker Filter Only)</h2>
+
+<div style="display:flex; align-items:center; gap:15px;">
+  <button id="soundToggle"
+    style="background:#222;border:1px solid #444;color:#4da6ff;padding:6px 10px;cursor:pointer;border-radius:4px;">
+    🔔 Sound: OFF
+  </button>
+
+  <h2>GlobeNewswire Feed (Ticker Filter Only)</h2>
+</div>
+
 <table>
 <tr>
 <th>Timestamp (PT)</th>
@@ -335,12 +345,74 @@ a:hover { text-decoration: underline; }
 </tr>
 ${rows}
 </table>
+
+<!-- AUDIO FILE -->
+<audio id="newsSound" src="/bell-ding-correct.mp3" preload="auto"></audio>
+
 <script>
+
+// ===========================
+// AUTO REFRESH
+// ===========================
 setInterval(() => {
   window.location.reload();
 }, 30000);
+
+// ===========================
+// SOUND SYSTEM
+// ===========================
+
+let soundEnabled = localStorage.getItem("soundEnabled") === "true";
+const toggleBtn = document.getElementById("soundToggle");
+const audio = document.getElementById("newsSound");
+
+function updateButton() {
+  toggleBtn.innerText = soundEnabled ? "🔔 Sound: ON" : "🔔 Sound: OFF";
+}
+
+updateButton();
+
+// Toggle button click
+toggleBtn.addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("soundEnabled", soundEnabled);
+
+  if (soundEnabled) {
+    // Prime audio permission
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+    }).catch(()=>{});
+  }
+
+  updateButton();
+});
+
+// ===========================
+// NEW HEADLINE DETECTION
+// ===========================
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const rows = document.querySelectorAll("table tr");
+  if (rows.length < 2) return;
+
+  // 5th column = headline
+  const newestHeadline = rows[1].cells[4].innerText;
+  const lastHeadline = localStorage.getItem("lastHeadline");
+
+  if (soundEnabled && lastHeadline && newestHeadline !== lastHeadline) {
+    audio.volume = 0.35;
+    audio.play().catch(()=>{});
+  }
+
+  localStorage.setItem("lastHeadline", newestHeadline);
+});
+
 </script>
+
 </body>
+
 </html>
 `);
 });
