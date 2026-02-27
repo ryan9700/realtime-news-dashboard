@@ -43,10 +43,10 @@ const KEYWORDS = [
 "deployment","rollout","upgrade","innovation",
 
 // 🏭 Strategic / Corporate
-"acquire","acquisition","merger","strategic","investment", "accepted", "pilot",
-"expands","enters", "launch", "launches", "grant", "secures", "secured", "wins",
-"milestone", "commercial","commercialization","production", "success",
-"successful", "upbeat", "transform", "technology", "partners"
+"acquire","acquisition","acquired", "merger","strategic","investment", "accept","accepted","pilot",
+"expands","enters", "launch", "launches", "grant", "secures", "secured", "securing","wins",
+"milestone","commercial","commercialization","production", "success",
+"successful","upbeat","transform","technology","partners"
 ];
 
 function containsKeyword(title) {
@@ -407,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 if (soundEnabled && lastHeadline && newestHeadline !== lastHeadline) {
 
-  audio.volume = 0.35;
+  audio.volume = 0.5;
   audio.play().catch(()=>{});
 
   // Desktop notification
